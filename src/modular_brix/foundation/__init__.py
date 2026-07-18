@@ -1,0 +1,1 @@
+# Foundation domain package.
