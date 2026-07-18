@@ -23,13 +23,19 @@
 - Audit persistence baseline: auditable events are persisted with context and queryable by organization
 - Workflow baseline: legal transition enforcement, requester/approver separation, and idempotent transition application
 - Documents baseline: append-only version history with current marker and organization-scoped access control
+- Sequences baseline (F09): atomic allocation, per-scope continuity, PostgreSQL concurrency test in CI
+- Governance: LICENSE, CONTRIBUTING, CHANGELOG, CODEOWNERS, PR template, initial commit
+- Environments: settings split local/test/production; production deploy check passes with --fail-level WARNING
+- Dependency lock: requirements.lock generated and audited (pip-audit: no known vulnerabilities)
+- Coverage gate: pytest --cov fail-under=85 (measured 98.68%)
 
 ## Explicit limits
 
-- PostgreSQL runtime is not yet wired in local default settings (SQLite dev default only)
-- Foundation F05-F12 and business domains are still scaffold-level or absent
+- Foundation F07, F08, F10, F11, F12 and business domains are still scaffold-level or absent
+- F01 extended models (LegalEntity, BrandSettings, ...), F02 MFA/session revocation, F03 data scopes/delegations remain to implement
 - F06 signature workflows and antivirus controls are not yet implemented
-- Security headers, MFA, and external secret manager are not yet implemented in this increment
+- Audit append-only is enforced at ORM level; a PostgreSQL trigger is planned to also block queryset updates
+- Backup/restore demonstrated with dumpdata/loaddata on the reference project only
 
 ## Regulatory references status
 
