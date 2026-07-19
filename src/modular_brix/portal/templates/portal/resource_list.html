@@ -1,0 +1,15 @@
+{% extends "portal/base.html" %}
+{% block content %}
+<div class="page">
+  {% include "portal/components/messages.html" %}
+  <header class="page-header"><div><p class="eyebrow">{{ resource.category }}</p><h1>{{ resource.label }}</h1><p class="lede">Données limitées à {{ organization.legal_name }}.</p></div>{% if resource.create_url_name and can_create %}<a class="button button-primary" href="{% url resource.create_url_name organization.slug %}">Créer</a>{% endif %}</header>
+  <section class="panel resource-panel" aria-labelledby="resource-list-title">
+    <h2 id="resource-list-title" class="sr-only">Liste des {{ resource.label|lower }}</h2>
+    <form method="get" class="filter-bar" role="search"><label for="resource-search" class="sr-only">Rechercher</label><input id="resource-search" type="search" name="q" value="{{ query }}" placeholder="Rechercher dans {{ resource.label|lower }}…"><button class="button button-secondary" type="submit">Rechercher</button>{% if query %}<a class="button button-quiet" href="{% url 'portal:resource-list' organization.slug resource.key %}">Effacer</a>{% endif %}</form>
+    {% if rows %}
+    <div class="table-wrap"><table class="data-table"><thead><tr>{% for item in resource.list_fields %}<th scope="col">{{ item.label }}</th>{% endfor %}<th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>{% for row in rows %}<tr>{% for cell in row.cells %}<td>{% if cell.is_status %}<span class="badge badge-{{ cell.raw|lower }}">{{ cell.value }}</span>{% else %}{{ cell.value }}{% endif %}</td>{% endfor %}<td class="row-action"><a href="{% url 'portal:resource-detail' organization.slug resource.key row.pk %}" aria-label="Ouvrir {{ resource.singular }}">Ouvrir <span aria-hidden="true">→</span></a></td></tr>{% endfor %}</tbody></table></div>
+    {% include "portal/components/pagination.html" %}
+    {% else %}{% include "portal/components/empty_state.html" with title="Aucun résultat" description="Aucun élément ne correspond à ce filtre dans cette organisation." %}{% endif %}
+  </section>
+</div>
+{% endblock %}

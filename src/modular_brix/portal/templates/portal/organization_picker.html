@@ -1,0 +1,21 @@
+{% extends "portal/base.html" %}
+{% block title %}Choisir une organisation · Modular Brix{% endblock %}
+{% block navigation %}{% endblock %}
+{% block content %}
+<div class="page narrow-page">
+  <header class="page-header"><div><p class="eyebrow">Votre espace</p><h1>Choisir une organisation</h1><p class="lede">Seules vos adhésions actives sont affichées.</p></div></header>
+  {% if memberships %}
+  <div class="organization-grid">
+    {% for item in memberships %}
+    <a class="organization-card" href="{% url 'portal:home' item.organization.slug %}">
+      <span class="organization-initial" aria-hidden="true">{{ item.organization.legal_name|slice:":1" }}</span>
+      <span><strong>{{ item.organization.legal_name }}</strong><small>{{ item.organization.legal_identifier }} · {{ item.organization.country_code }}</small></span>
+      <span aria-hidden="true">→</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  {% include "portal/components/empty_state.html" with title="Aucune organisation accessible" description="Votre compte ne possède aucune adhésion active. Contactez un administrateur." %}
+  {% endif %}
+</div>
+{% endblock %}

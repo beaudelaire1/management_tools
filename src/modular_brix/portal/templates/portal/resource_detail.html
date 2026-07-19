@@ -1,0 +1,10 @@
+{% extends "portal/base.html" %}
+{% block content %}
+<div class="page">
+  {% include "portal/components/messages.html" %}
+  <nav class="breadcrumbs" aria-label="Fil d’Ariane"><a href="{% url 'portal:resource-list' organization.slug resource.key %}">{{ resource.label }}</a><span aria-hidden="true">/</span><span aria-current="page">Détail</span></nav>
+  <header class="page-header"><div><p class="eyebrow">{{ resource.singular }}</p><h1>{{ instance }}</h1><p class="lede">Identifiant {{ instance.pk }}</p></div>{% block detail_actions %}{% endblock %}</header>
+  <section class="panel"><h2>Informations</h2><dl class="detail-grid">{% for item in details %}<div><dt>{{ item.label }}</dt><dd>{% if item.is_status %}<span class="badge badge-{{ item.raw|lower }}">{{ item.value }}</span>{% else %}{{ item.value|linebreaksbr }}{% endif %}</dd></div>{% endfor %}</dl></section>
+  {% block after_details %}{% endblock %}
+</div>
+{% endblock %}

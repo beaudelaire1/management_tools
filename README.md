@@ -6,8 +6,9 @@ Neutral, installable Django building blocks for management, finance, and steerin
 
 This repository is a **pre-release domain foundation**, not a complete ERP and not production-ready accounting
 software. The implemented bricks provide models, migrations, transactional services, invariants, and tests. Most
-server-rendered interfaces, APIs, asynchronous tasks, external adapters, and regulated accounting capabilities are
-still to be built.
+specialized APIs, asynchronous tasks, external adapters, and regulated accounting capabilities are still to be
+built. The optional `modular_brix.portal` app now provides an authenticated server-rendered interface for all
+implemented domain resources and the core quote-to-cash workflow.
 
 Implemented baselines:
 
@@ -34,10 +35,11 @@ README.
 - organization-bound permissions and data scopes
 - PostgreSQL triggers for append-only audit events and immutable issued financial documents
 - server-rendered UI as the target; no mandatory SPA or CDN
+- responsive organization-scoped portal with accessible templates and transactional quote-to-cash forms
 
 Client projects install the package and activate only the Django applications they need in `INSTALLED_APPS`.
-`example_project` is the integration host used by migrations and tests; it currently exposes Django admin and a
-health endpoint, not a complete demonstration application.
+`example_project` is the integration host used by migrations and tests; it exposes Django admin, authentication,
+the organization portal at `/app/`, and the organization health endpoint.
 
 ## Reproducible local setup
 

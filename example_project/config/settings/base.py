@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "modular_brix.steering.cashflow",
     "modular_brix.steering.analytics",
     "modular_brix.steering.reports",
+    "modular_brix.portal",
 ]
 
 MIDDLEWARE = [
@@ -100,5 +101,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "portal:organization-picker"
+LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

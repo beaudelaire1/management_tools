@@ -31,6 +31,15 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"modular_brix.ui" = ["templates/ui/*.html"]
+"modular_brix.portal" = [
+  "templates/portal/*.html",
+  "templates/portal/components/*.html",
+  "templates/registration/*.html",
+  "static/portal/*.css",
+]
+
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "example_project.config.settings.test"
 python_files = ["test_*.py", "*_test.py"]

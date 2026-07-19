@@ -1,0 +1,58 @@
+{% extends "ui/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Portail" }} · {{ organization.legal_name|default:"Modular Brix" }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'portal/app.css' %}">{% endblock %}
+{% block body_class %}portal-shell{% endblock %}
+
+{% block header %}
+<div class="app-header">
+  <a class="brand" href="{% if organization %}{% url 'portal:home' organization.slug %}{% else %}{% url 'portal:organization-picker' %}{% endif %}">
+    <span class="brand-mark" aria-hidden="true">MB</span>
+    <span><strong>Modular Brix</strong><small>Gestion et pilotage</small></span>
+  </a>
+  <div class="header-actions">
+    {% if organization %}
+    <details class="organization-switcher">
+      <summary><span>Organisation</span><strong>{{ organization.legal_name }}</strong></summary>
+      <ul>
+        {% for item in organization_memberships %}
+        <li><a href="{% url 'portal:home' item.organization.slug %}"{% if item.organization_id == organization.id %} aria-current="page"{% endif %}>{{ item.organization.legal_name }}</a></li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+    <div class="user-menu">
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="button button-quiet" type="submit">Se déconnecter</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block navigation %}
+{% if organization %}
+<div class="sidebar-inner">
+  <a class="nav-home{% if not active_resource %} is-active{% endif %}" href="{% url 'portal:home' organization.slug %}">Vue d’ensemble</a>
+  {% for category, resources in navigation_groups %}
+  <section class="nav-group" aria-labelledby="nav-{{ forloop.counter }}">
+    <h2 id="nav-{{ forloop.counter }}">{{ category }}</h2>
+    <ul>
+      {% for item in resources %}
+      <li><a href="{% url 'portal:resource-list' organization.slug item.key %}"{% if active_resource == item.key %} class="is-active" aria-current="page"{% endif %}>{{ item.label }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+{% block footer %}
+<div class="app-footer"><span>Modular Brix</span><span>Interface serveur sécurisée par organisation</span></div>
+{% endblock %}

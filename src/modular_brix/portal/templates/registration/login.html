@@ -1,0 +1,24 @@
+{% extends "ui/base.html" %}
+{% load static %}
+
+{% block title %}Connexion · Modular Brix{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'portal/app.css' %}">{% endblock %}
+{% block body_class %}auth-shell{% endblock %}
+{% block header %}<div class="auth-brand"><span class="brand-mark" aria-hidden="true">MB</span><strong>Modular Brix</strong></div>{% endblock %}
+{% block navigation %}{% endblock %}
+{% block content %}
+<section class="auth-card" aria-labelledby="login-title">
+  <p class="eyebrow">Espace sécurisé</p>
+  <h1 id="login-title">Connexion</h1>
+  <p class="lede">Accédez aux organisations et aux données autorisées par votre rôle.</p>
+  {% if form.non_field_errors %}<div class="alert alert-error" role="alert">Identifiants incorrects. Vérifiez votre nom d’utilisateur et votre mot de passe.</div>{% endif %}
+  <form method="post" class="stacked-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="form-field"><label for="{{ form.username.id_for_label }}">Nom d’utilisateur</label>{{ form.username }}{% for error in form.username.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+    <div class="form-field"><label for="{{ form.password.id_for_label }}">Mot de passe</label>{{ form.password }}{% for error in form.password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+    <button type="submit" class="button button-primary button-wide">Se connecter</button>
+  </form>
+</section>
+{% endblock %}
+{% block footer %}<div class="auth-footer">Aucune donnée n’est chargée avant authentification.</div>{% endblock %}
