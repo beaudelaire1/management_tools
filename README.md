@@ -26,6 +26,9 @@ Not started:
 The exact implemented scope and explicit limits are maintained in `docs/spec_traceability.md` and each brick's
 README.
 
+Portal colors, layout, enabled bricks and client-defined resource providers are configured without forking packaged
+templates; see `docs/portal_customization.md`.
+
 ## Architecture
 
 - Python 3.13 and Django 5.2 LTS

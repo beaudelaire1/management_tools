@@ -2,6 +2,8 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
+from django.test import override_settings
 from django.urls import reverse
 
 from modular_brix.finance.billing.models import Invoice
@@ -14,6 +16,7 @@ from modular_brix.management.parties.models import Party
 from modular_brix.management.parties.services import create_party
 from modular_brix.management.sales.models import Quote, SalesOrder
 from modular_brix.portal.resources import RESOURCES
+from modular_brix.portal.configuration import load_portal_configuration
 
 
 def _make_org(suffix: str):
@@ -123,6 +126,48 @@ def test_every_portal_resource_has_a_working_list_template(client, resource_key:
     assert response.status_code == 200
     assert response.context["resource"].key == resource_key
     assert "Aucun résultat" in response.content.decode()
+
+
+@pytest.mark.django_db
+@override_settings(
+    MODULAR_BRIX_PORTAL={
+        "theme": {"brand": "#3156a3", "sidebar_width": "280px"},
+        "layout": {"navigation": "right", "header": "static", "density": "compact"},
+    }
+)
+def test_portal_theme_and_layout_are_configurable_without_template_changes(client) -> None:
+    organization = _make_org("custom-theme")
+    user = _make_user_with_role(organization, "custom-theme")
+    client.force_login(user)
+
+    response = client.get(reverse("portal:home", args=[organization.slug]))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "--brand: #3156a3" in content
+    assert "--sidebar-width: 280px" in content
+    assert "layout-nav-right header-static density-compact" in content
+
+
+@override_settings(MODULAR_BRIX_PORTAL={"theme": {"brand": "url(javascript:alert(1))"}})
+def test_portal_rejects_unsafe_theme_tokens() -> None:
+    with pytest.raises(ImproperlyConfigured, match="six-digit hexadecimal"):
+        load_portal_configuration()
+
+
+@pytest.mark.django_db
+@override_settings(MODULAR_BRIX_PORTAL={"enabled_bricks": ["management_parties"]})
+def test_portal_can_enable_only_selected_bricks(client) -> None:
+    organization = _make_org("selected-bricks")
+    user = _make_user_with_role(organization, "selected-bricks")
+    client.force_login(user)
+
+    parties = client.get(reverse("portal:resource-list", args=[organization.slug, "parties"]))
+    quotes = client.get(reverse("portal:resource-list", args=[organization.slug, "quotes"]))
+
+    assert parties.status_code == 200
+    assert quotes.status_code == 404
+    assert "Devis" not in parties.content.decode()
 
 
 @pytest.mark.django_db
