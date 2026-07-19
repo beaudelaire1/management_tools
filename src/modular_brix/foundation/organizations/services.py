@@ -22,3 +22,13 @@ def create_organization_with_default_establishment(
         display_name="Main establishment",
     )
     return organization
+
+
+@transaction.atomic
+def archive_organization(*, organization_id: str) -> Organization:
+    """Archive without deleting: historical references stay intact (spec F01)."""
+    organization = Organization.objects.select_for_update().get(id=organization_id)
+    organization.is_active = False
+    organization.save(update_fields=["is_active", "updated_at"])
+    organization.establishments.update(is_active=False)
+    return organization

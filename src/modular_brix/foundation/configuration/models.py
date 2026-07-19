@@ -1,0 +1,83 @@
+import uuid
+from decimal import Decimal, InvalidOperation
+
+from django.db import models
+
+
+class Feature(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.SlugField(max_length=80, unique=True)
+    label = models.CharField(max_length=120)
+    depends_on = models.JSONField(default=list)
+
+
+class FeatureAssignment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="feature_assignments",
+    )
+    feature = models.ForeignKey(Feature, on_delete=models.PROTECT, related_name="assignments")
+    is_enabled = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "feature"], name="uq_feature_assignment")
+        ]
+
+
+class SettingDefinition(models.Model):
+    VALUE_TYPES = ("string", "integer", "boolean", "decimal")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.SlugField(max_length=80, unique=True)
+    value_type = models.CharField(max_length=16)
+    default_value = models.JSONField(null=True, blank=True)
+
+    def validate_value(self, value) -> None:
+        if self.value_type == "string" and not isinstance(value, str):
+            raise ValueError(f"Setting {self.code} expects a string.")
+        if self.value_type == "integer" and (isinstance(value, bool) or not isinstance(value, int)):
+            raise ValueError(f"Setting {self.code} expects an integer.")
+        if self.value_type == "boolean" and not isinstance(value, bool):
+            raise ValueError(f"Setting {self.code} expects a boolean.")
+        if self.value_type == "decimal":
+            try:
+                Decimal(str(value))
+            except (InvalidOperation, TypeError):
+                raise ValueError(f"Setting {self.code} expects a decimal.") from None
+
+
+class SettingValue(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="setting_values",
+    )
+    definition = models.ForeignKey(SettingDefinition, on_delete=models.PROTECT, related_name="values")
+    value = models.JSONField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "definition"], name="uq_setting_value")
+        ]
+
+
+class VocabularyTerm(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="vocabulary_terms",
+    )
+    key = models.SlugField(max_length=80)
+    label = models.CharField(max_length=120)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "key"], name="uq_vocabulary_org_key")
+        ]

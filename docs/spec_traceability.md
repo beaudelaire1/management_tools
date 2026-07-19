@@ -27,14 +27,19 @@
 - Governance: LICENSE, CONTRIBUTING, CHANGELOG, CODEOWNERS, PR template, initial commit
 - Environments: settings split local/test/production; production deploy check passes with --fail-level WARNING
 - Dependency lock: requirements.lock generated and audited (pip-audit: no known vulnerabilities)
-- Coverage gate: pytest --cov fail-under=85 (measured 98.68%)
+- Coverage gate: pytest --cov fail-under=85 (measured 99.42%)
+- F01 completed: all specified models, archive without delete
+- F02 extended: session revocation, MFA factor model, progressive lockout, anti-enumeration
+- F03 extended: data scopes, dated delegations, policy decision log, self-elevation blocked
+- F04 hardened: PostgreSQL trigger blocks UPDATE/DELETE at database level (applied in CI)
+- F07/F08/F10/F11/F12 baselines implemented with acceptance-criteria tests
 
 ## Explicit limits
 
-- Foundation F07, F08, F10, F11, F12 and business domains are still scaffold-level or absent
-- F01 extended models (LegalEntity, BrandSettings, ...), F02 MFA/session revocation, F03 data scopes/delegations remain to implement
+- Business domains (management G, finance C, steering P) are not started: next lots
 - F06 signature workflows and antivirus controls are not yet implemented
-- Audit append-only is enforced at ORM level; a PostgreSQL trigger is planned to also block queryset updates
+- F07 preferences/suppression lists, F08 custom fields, F10 calendars/holidays, F11 mappings/encryption,
+  F12 HTMX partials catalog remain to implement (documented per brick README)
 - Backup/restore demonstrated with dumpdata/loaddata on the reference project only
 
 ## Regulatory references status

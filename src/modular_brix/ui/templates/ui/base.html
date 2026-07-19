@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="{{ language_code|default:'fr' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title|default:"Application" }}{% endblock %}</title>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main-content">{% block skip_label %}Aller au contenu principal{% endblock %}</a>
+  <header role="banner">
+    {% block header %}{% endblock %}
+  </header>
+  <nav role="navigation" aria-label="{% block nav_label %}Navigation principale{% endblock %}">
+    {% block navigation %}{% endblock %}
+  </nav>
+  <main id="main-content" role="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+  <footer role="contentinfo">
+    {% block footer %}{% endblock %}
+  </footer>
+</body>
+</html>

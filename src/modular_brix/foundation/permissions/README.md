@@ -3,6 +3,7 @@
 Explicit roles and action permissions, deny by default.
 
 - Depends on: accounts (F02).
-- Models: `Role` (read/create/validate/export flags), `RoleAssignment` (optional validity window).
-- Policies: `has_action_permission` — returns False unless a currently-valid assignment grants the action.
-- Not yet implemented: `DataScope`, `Delegation`, `PolicyDecisionLog`, self-elevation prevention.
+- Models: `Role`, `RoleAssignment`, `DataScope`, `Delegation` (dated, self-delegation blocked), `PolicyDecisionLog` (every decision logged with reason).
+- Policies: `has_action_permission` — deny by default; grants via role or currently-valid delegation; decision + reason logged.
+- Services: `assign_role` (self-elevation blocked), `delegate_role`.
+- Not yet implemented: scope-filtered querysets helpers, access simulator UI.

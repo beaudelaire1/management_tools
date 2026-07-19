@@ -3,7 +3,6 @@
 Legal and operational entities that own all business data.
 
 - Depends on: none (foundation root).
-- Models: `Organization`, `Establishment` (unique legal identifier per country, unique establishment code per organization).
-- Services: `create_organization_with_default_establishment` (transactional).
+- Models: `Organization`, `Establishment`, `LegalEntity`, `Department`, `Team`, `Address`, `LegalProfile`, `FiscalProfile`, `BrandSettings`.
+- Services: `create_organization_with_default_establishment`, `archive_organization` (archive without delete — historical references intact).
 - Policies: `can_view_organization` — strict organization isolation.
-- Not yet implemented: `LegalEntity`, `Department`, `Team`, `Address`, `LegalProfile`, `FiscalProfile`, `BrandSettings`.

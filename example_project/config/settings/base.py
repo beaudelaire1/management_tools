@@ -23,6 +23,9 @@ INSTALLED_APPS = [
     "modular_brix.foundation.notifications",
     "modular_brix.foundation.configuration",
     "modular_brix.foundation.sequences",
+    "modular_brix.foundation.reference_data",
+    "modular_brix.foundation.data_transfer",
+    "modular_brix.ui",
 ]
 
 MIDDLEWARE = [
