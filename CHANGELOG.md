@@ -19,3 +19,8 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
   F12 accessible UI base templates with saved views and table preferences.
 - Environment-split Django settings (local, test, production) with hardened production profile.
 - CI pipeline: lint, typing, security scan, dependency audit, migration check, PostgreSQL tests, coverage gate.
+- Lot 2 commercial cycle: parties with controlled merge (G01), CRM lead conversion without duplication (G02),
+  dated catalog pricing (G03), versioned quotes with frozen totals and proof-based acceptance (G04),
+  orders and capped deliveries (G05), immutable invoices with chronological numbering and capped credit notes (C01),
+  idempotent payments with double-cap allocations (C02), aging balance, reminders and disputes (C03),
+  centralized money computation shared by every document.

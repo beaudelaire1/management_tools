@@ -33,10 +33,15 @@
 - F03 extended: data scopes, dated delegations, policy decision log, self-elevation blocked
 - F04 hardened: PostgreSQL trigger blocks UPDATE/DELETE at database level (applied in CI)
 - F07/F08/F10/F11/F12 baselines implemented with acceptance-criteria tests
+- Lot 2 (G01-G05, C01-C03) baselines implemented; invariants 11.2 tested: issued invoice immutable with frozen
+  snapshot and continuous chronological numbering, credit note capped, payment allocation double-capped,
+  identical monetary totals across quote/order/invoice, idempotent conversions and webhook replay,
+  reminders excluding paid and disputed invoices; end-to-end path quote->order->invoice->payment reconciled (13.2-4)
 
 ## Explicit limits
 
-- Business domains (management G, finance C, steering P) are not started: next lots
+- Steering (P), operations (G06-G15), pre-accounting and accounting (C04-C15) are not started: next lots
+- C01 full mandatory-mention set and PDF rendering remain to implement; chartered-accountant validation required before production
 - F06 signature workflows and antivirus controls are not yet implemented
 - F07 preferences/suppression lists, F08 custom fields, F10 calendars/holidays, F11 mappings/encryption,
   F12 HTMX partials catalog remain to implement (documented per brick README)

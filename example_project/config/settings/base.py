@@ -26,6 +26,13 @@ INSTALLED_APPS = [
     "modular_brix.foundation.reference_data",
     "modular_brix.foundation.data_transfer",
     "modular_brix.ui",
+    "modular_brix.management.parties",
+    "modular_brix.management.crm",
+    "modular_brix.management.catalog",
+    "modular_brix.management.sales",
+    "modular_brix.finance.billing",
+    "modular_brix.finance.payments",
+    "modular_brix.finance.receivables",
 ]
 
 MIDDLEWARE = [
