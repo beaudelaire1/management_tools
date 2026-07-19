@@ -86,6 +86,12 @@ def _buyer_identifier(party, scheme: str) -> str:
     return identifier.value if identifier is not None else ""
 
 
+def _buyer_address(party) -> str:
+    addresses = party.addresses.filter(is_active=True)
+    address = addresses.filter(address_type="billing").first() or addresses.first()
+    return _format_address(address) if address is not None else ""
+
+
 @transaction.atomic
 def issue_invoice(
     *,
@@ -122,7 +128,7 @@ def issue_invoice(
     invoice.buyer_name = invoice.party.display_name
     for field, value in _seller_snapshot(invoice.organization).items():
         setattr(invoice, field, value)
-    invoice.buyer_address = buyer_address.strip()
+    invoice.buyer_address = buyer_address.strip() or _buyer_address(invoice.party)
     invoice.buyer_vat_number = _buyer_identifier(invoice.party, "vat")
     invoice.late_penalty_rate = late_penalty_rate
     invoice.recovery_indemnity = recovery_indemnity

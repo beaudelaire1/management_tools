@@ -42,6 +42,18 @@ class PartyRole(models.Model):
         ]
 
 
+class PartyAddress(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name="addresses")
+    address_type = models.CharField(max_length=32)  # billing | delivery | legal | other
+    line_1 = models.CharField(max_length=255)
+    line_2 = models.CharField(max_length=255, blank=True)
+    postal_code = models.CharField(max_length=16)
+    city = models.CharField(max_length=120)
+    country_code = models.CharField(max_length=2)
+    is_active = models.BooleanField(default=True)
+
+
 class PartyIdentifier(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     party = models.ForeignKey(Party, on_delete=models.CASCADE, related_name="identifiers")
