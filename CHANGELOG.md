@@ -5,6 +5,16 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-07-19
+
+First tagged release: foundation (F01-F12), commercial cycle (G01-G05), finance baseline (C01-C03) with the
+completed C01 mandatory-mention set and PDF rendering, steering (P01-P09, P13), and the configurable
+server-rendered portal. The full CI quality chain (lint, typing, security scan, dependency audit, migration
+checks, PostgreSQL tests with coverage gate, production deploy check) passes on a clean environment; see
+`docs/etat_des_lieux.md` for the verified status report.
+
 ### Security
 
 - Bind permission decisions to an active membership, target organization, and optional data scope; cross-tenant
@@ -27,6 +37,11 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ### Added
 
+- C01 completion: full mandatory-mention snapshot frozen at invoice issuance (seller legal identity, share
+  capital, registry city, addresses, VAT numbers, late-penalty rate, fixed recovery indemnity, early-discount
+  terms, art. 293 B exemption for franchise regimes), `missing_mandatory_mentions` gap reporting, deterministic
+  dependency-free PDF rendering that refuses drafts and incomplete mention sets, and a permission-checked
+  portal download endpoint.
 - Authenticated, responsive server-rendered portal with organization switching, permission-checked navigation,
   searchable resource lists, detail screens, accessible forms, and a complete quote-to-cash interaction flow.
 - Reusable portal configuration with validated theme tokens, left/right/top navigation, compact density, selective

@@ -46,13 +46,18 @@
 - Consolidation: target-organization checks prevent cross-tenant access and relationships; sent quotes, issued
   invoices, and their lines are immutable at the ORM layer and through PostgreSQL triggers; replayed payment and
   notification idempotency keys require identical payloads
+- C01 completion: full mandatory-mention snapshot frozen at issuance (seller legal identity, addresses, VAT
+  numbers, payment-term mentions, art. 293 B exemption), gap reporting via `missing_mandatory_mentions`, and
+  deterministic dependency-free PDF rendering that refuses drafts and incomplete mention sets; portal download
+  endpoint with permission checks; validated by `tests/test_invoice_compliance.py`
 
 ## Explicit limits
 
 - Every listed brick remains a baseline until all mandatory interfaces, selectors/policies, APIs where required,
   examples, and full acceptance criteria from the specification are delivered
 - Operations (G06-G15, P10-P12), pre-accounting and accounting (C04-C15) are not started: next lots
-- C01 full mandatory-mention set and PDF rendering remain to implement; chartered-accountant validation required before production
+- C01 mention snapshot and PDF are implemented; the buyer address still lacks a source model (G01 parties carry
+  no addresses) and the late-penalty rate is caller-provided; chartered-accountant validation required before production
 - F06 signature workflows and antivirus controls are not yet implemented
 - F07 preferences/suppression lists, F08 custom fields, F10 calendars/holidays, F11 mappings/encryption,
   F12 HTMX partials catalog remain to implement (documented per brick README)

@@ -477,6 +477,27 @@ def order_invoice_view(request: HttpRequest, org_slug: str, order_id: str) -> Ht
     return redirect("portal:resource-detail", org_slug=org_slug, resource_key="invoices", pk=invoice.pk)
 
 
+@require_http_methods(["GET"])
+def invoice_pdf_view(request: HttpRequest, org_slug: str, invoice_id: str) -> HttpResponse:
+    _require_resource("invoices")
+    access = _authorized_form_view(request, org_slug, action="read")
+    if isinstance(access, HttpResponse):
+        return access
+    organization, _ = access
+    from modular_brix.finance.billing.pdf import render_invoice_pdf
+
+    invoice_model = apps.get_model("finance_billing.Invoice")
+    invoice = get_object_or_404(invoice_model, id=invoice_id, organization=organization)
+    try:
+        content = render_invoice_pdf(invoice_id=str(invoice.id))
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("portal:resource-detail", org_slug=org_slug, resource_key="invoices", pk=invoice.pk)
+    response = HttpResponse(content, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{invoice.number}.pdf"'
+    return response
+
+
 @require_POST
 def invoice_issue_view(request: HttpRequest, org_slug: str, invoice_id: str) -> HttpResponse:
     _require_resource("invoices")
