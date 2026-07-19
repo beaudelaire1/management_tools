@@ -2,7 +2,7 @@ from django.db import models, transaction
 
 from modular_brix.foundation.accounts.models import Membership
 
-from .models import Delegation, Role, RoleAssignment
+from .models import Delegation, Role, RoleAssignment, ScopeType
 
 
 @transaction.atomic
@@ -61,6 +61,8 @@ def delegate_role(
         raise ValueError("Delegation end must be after its start.")
     if bool(scope_type) != bool(scope_ref):
         raise ValueError("Delegation scope type and reference must be provided together.")
+    if scope_type and scope_type not in ScopeType.values:
+        raise ValueError(f"Unsupported delegation scope type: {scope_type}.")
 
     memberships = {
         str(membership.id): membership

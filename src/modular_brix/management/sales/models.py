@@ -3,6 +3,13 @@ import uuid
 from django.db import models
 
 
+QUOTE_CREATE_DRAFT_ERROR = "A quote must be created as a draft and sent through the sending service."
+QUOTE_IMMUTABLE_ERROR = "A sent quote version is immutable; create a revision instead."
+QUOTE_LINE_IMMUTABLE_ERROR = "Lines of a sent quote version are immutable."
+QUOTE_STATUS_TRANSITION_ERROR = "Illegal quote status transition"
+QUOTE_ACCEPTANCE_ERROR = "An accepted quote requires dated acceptance proof."
+
+
 class Quote(models.Model):
     FROZEN_FIELDS = (
         "organization_id",
@@ -53,13 +60,13 @@ class Quote(models.Model):
 
     def save(self, *args, **kwargs):
         if self._state.adding and self.status != "draft":
-            raise ValueError("A quote must be created as a draft and sent through the sending service.")
+            raise ValueError(QUOTE_CREATE_DRAFT_ERROR)
         if not self._state.adding:
             original = Quote.objects.get(pk=self.pk)
             if original.status != "draft" and any(
                 getattr(original, field) != getattr(self, field) for field in self.FROZEN_FIELDS
             ):
-                raise ValueError("A sent quote version is immutable; create a revision instead.")
+                raise ValueError(QUOTE_IMMUTABLE_ERROR)
             allowed_transitions = {
                 "draft": {"draft", "sent"},
                 "sent": {"sent", "accepted", "rejected"},
@@ -67,14 +74,16 @@ class Quote(models.Model):
                 "rejected": {"rejected"},
             }
             if self.status not in allowed_transitions.get(original.status, set()):
-                raise ValueError(f"Illegal quote status transition: {original.status} -> {self.status}.")
+                raise ValueError(
+                    f"{QUOTE_STATUS_TRANSITION_ERROR}: {original.status} -> {self.status}."
+                )
             if self.status == "accepted" and (not self.acceptance_proof.strip() or self.accepted_at is None):
-                raise ValueError("An accepted quote requires dated acceptance proof.")
+                raise ValueError(QUOTE_ACCEPTANCE_ERROR)
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if self.status != "draft":
-            raise ValueError("A sent quote version is immutable; create a revision instead.")
+            raise ValueError(QUOTE_IMMUTABLE_ERROR)
         return super().delete(*args, **kwargs)
 
 
@@ -94,12 +103,12 @@ class QuoteLine(models.Model):
 
     def save(self, *args, **kwargs):
         if Quote.objects.filter(id=self.quote_id).exclude(status="draft").exists():
-            raise ValueError("Lines of a sent quote version are immutable.")
+            raise ValueError(QUOTE_LINE_IMMUTABLE_ERROR)
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if Quote.objects.filter(id=self.quote_id).exclude(status="draft").exists():
-            raise ValueError("Lines of a sent quote version are immutable.")
+            raise ValueError(QUOTE_LINE_IMMUTABLE_ERROR)
         return super().delete(*args, **kwargs)
 
 

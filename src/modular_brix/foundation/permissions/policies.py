@@ -1,9 +1,10 @@
 from django.db import models
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
 from modular_brix.foundation.accounts.models import Membership
 
-from .models import Delegation, PolicyDecisionLog, RoleAssignment
+from .models import Delegation, PolicyDecisionLog, RoleAssignment, ScopeType
 
 
 ACTION_FIELD_MAP = {
@@ -16,7 +17,10 @@ ACTION_FIELD_MAP = {
 
 
 def _scope_matches(*, scope_type: str, scope_ref: str, organization_id: str) -> models.Q:
-    organization_scope = models.Q(data_scopes__scope_type="organization", data_scopes__scope_ref=organization_id)
+    organization_scope = models.Q(
+        data_scopes__scope_type=ScopeType.ORGANIZATION,
+        data_scopes__scope_ref=organization_id,
+    )
     unscoped = models.Q(data_scopes__isnull=True)
     if not scope_type or not scope_ref:
         return unscoped | organization_scope
@@ -27,7 +31,7 @@ def _scope_matches(*, scope_type: str, scope_ref: str, organization_id: str) -> 
 
 
 def _delegation_scope_matches(*, scope_type: str, scope_ref: str, organization_id: str) -> models.Q:
-    organization_scope = models.Q(scope_type="organization", scope_ref=organization_id)
+    organization_scope = models.Q(scope_type=ScopeType.ORGANIZATION, scope_ref=organization_id)
     unscoped = models.Q(scope_type="", scope_ref="")
     if not scope_type or not scope_ref:
         return unscoped | organization_scope
@@ -87,26 +91,28 @@ def has_action_permission(
                 organization_id=str(organization_id),
             )
         )
-        delegated = False
-        for delegation in delegation_candidates:
-            source_assignments = (
-                RoleAssignment.objects.filter(
-                    membership=delegation.from_membership,
-                    role=delegation.role,
+        source_assignments = (
+            RoleAssignment.objects.filter(
+                membership_id=OuterRef("from_membership_id"),
+                role_id=OuterRef("role_id"),
+            )
+            .filter(models.Q(starts_at__isnull=True) | models.Q(starts_at__lte=now))
+            .filter(models.Q(ends_at__isnull=True) | models.Q(ends_at__gte=now))
+            .filter(
+                models.Q(data_scopes__isnull=True)
+                | models.Q(
+                    data_scopes__scope_type=ScopeType.ORGANIZATION,
+                    data_scopes__scope_ref=str(organization_id),
                 )
-                .filter(models.Q(starts_at__isnull=True) | models.Q(starts_at__lte=now))
-                .filter(models.Q(ends_at__isnull=True) | models.Q(ends_at__gte=now))
-                .filter(
-                    _scope_matches(
-                        scope_type=delegation.scope_type,
-                        scope_ref=delegation.scope_ref,
-                        organization_id=str(organization_id),
-                    )
+                | models.Q(
+                    data_scopes__scope_type=OuterRef("scope_type"),
+                    data_scopes__scope_ref=OuterRef("scope_ref"),
                 )
             )
-            if source_assignments.exists():
-                delegated = True
-                break
+        )
+        delegated = delegation_candidates.annotate(
+            source_assignment_exists=Exists(source_assignments)
+        ).filter(source_assignment_exists=True).exists()
         allowed = direct or delegated
         reason = "role" if direct else ("delegation" if delegated else "no_grant")
 

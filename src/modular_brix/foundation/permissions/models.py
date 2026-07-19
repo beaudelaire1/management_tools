@@ -3,6 +3,13 @@ import uuid
 from django.db import models
 
 
+class ScopeType(models.TextChoices):
+    ORGANIZATION = "organization", "Organization"
+    ESTABLISHMENT = "establishment", "Establishment"
+    TEAM = "team", "Team"
+    OBJECT = "object", "Object"
+
+
 class Role(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     code = models.SlugField(max_length=80, unique=True)
@@ -49,7 +56,7 @@ class DataScope(models.Model):
                 name="uq_data_scope_assignment_ref",
             ),
             models.CheckConstraint(
-                condition=models.Q(scope_type__in=["organization", "establishment", "team", "object"]),
+                condition=models.Q(scope_type__in=ScopeType.values),
                 name="ck_data_scope_type_supported",
             ),
         ]
@@ -87,7 +94,7 @@ class Delegation(models.Model):
             models.CheckConstraint(
                 condition=(
                     models.Q(scope_type="")
-                    | models.Q(scope_type__in=["organization", "establishment", "team", "object"])
+                    | models.Q(scope_type__in=ScopeType.values)
                 ),
                 name="ck_delegation_scope_type_supported",
             ),

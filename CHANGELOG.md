@@ -20,6 +20,10 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 - CI and the documented setup now install the pinned `requirements.lock` before the editable package.
 - Project status documentation now distinguishes implemented baselines from complete, production-ready bricks.
+- Permission delegation checks now use a correlated existence query instead of one source-assignment query per
+  delegation, with a constant-query regression test.
+- Permission scope types and idempotent replay comparison are centralized; PostgreSQL and ORM immutability error
+  contracts are kept aligned by explicit regression tests.
 
 ### Added
 
