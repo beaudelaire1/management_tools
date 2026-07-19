@@ -37,10 +37,15 @@
   snapshot and continuous chronological numbering, credit note capped, payment allocation double-capped,
   identical monetary totals across quote/order/invoice, idempotent conversions and webhook replay,
   reminders excluding paid and disputed invoices; end-to-end path quote->order->invoice->payment reconciled (13.2-4)
+- Lot 3 (P01-P09, P13) baselines implemented: widgets never bypass permissions, deterministic indicator
+  computation with tracked origin, objective requires measurable key result, approved budget frozen with
+  explicit revisions, forecast versions reproducible with stored assumptions, scenario comparison without
+  side effects, cash flows individually sourced without double counting, margins reconciled to invoice source,
+  funnel reconciliation, reports permission-checked and reproducible; steering reads domains, never writes
 
 ## Explicit limits
 
-- Steering (P), operations (G06-G15), pre-accounting and accounting (C04-C15) are not started: next lots
+- Operations (G06-G15, P10-P12), pre-accounting and accounting (C04-C15) are not started: next lots
 - C01 full mandatory-mention set and PDF rendering remain to implement; chartered-accountant validation required before production
 - F06 signature workflows and antivirus controls are not yet implemented
 - F07 preferences/suppression lists, F08 custom fields, F10 calendars/holidays, F11 mappings/encryption,

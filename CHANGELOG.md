@@ -24,3 +24,8 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
   orders and capped deliveries (G05), immutable invoices with chronological numbering and capped credit notes (C01),
   idempotent payments with double-cap allocations (C02), aging balance, reminders and disputes (C03),
   centralized money computation shared by every document.
+- Lot 3 steering: auditable indicators with deterministic formulas (P02), permission-checked dashboards (P01),
+  objectives linked to measurable key results (P03), budgets with frozen approved versions and overspend
+  detection (P04), dated reproducible forecasts (P05), side-effect-free scenario comparison (P06),
+  sourced cash projections with low-point alerts (P07), margin and funnel analytics reconciled to sources
+  (P08/P09), reproducible permission-checked reports (P13). Steering never writes to domain tables.

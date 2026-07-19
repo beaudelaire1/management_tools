@@ -33,6 +33,14 @@ INSTALLED_APPS = [
     "modular_brix.finance.billing",
     "modular_brix.finance.payments",
     "modular_brix.finance.receivables",
+    "modular_brix.steering.indicators",
+    "modular_brix.steering.dashboards",
+    "modular_brix.steering.objectives",
+    "modular_brix.steering.budgeting",
+    "modular_brix.steering.forecasts",
+    "modular_brix.steering.cashflow",
+    "modular_brix.steering.analytics",
+    "modular_brix.steering.reports",
 ]
 
 MIDDLEWARE = [
