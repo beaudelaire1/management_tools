@@ -5,7 +5,20 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Operations lot 4 (G06-G15): purchasing, append-only stock, projects, interventions, scheduling,
+  time tracking, contracts and subscriptions, support, assets and maintenance, workforce administration.
+- Steering lot 5 (P10-P12): capacity utilization, risk register with controls, quality CAPA.
+- Pre-accounting lot 6 (C04-C07): expenses, supplier invoices with three-way matching, banking with
+  idempotent imports and audited reconciliation, accountant transmission batches.
+- Accounting lot 7 (C08-C13, C15): double-entry ledger, subledger lettering, analytic allocations,
+  tax returns, fixed assets, closing runs, deterministic FEC exports.
+- E-invoicing lot 8 (C14): frozen payloads, idempotent transmissions, pluggable platform adapters.
+- Foundation completions: document signatures and file-acceptance controls (F06), notification
+  suppression lists and channel preferences (F07), typed custom fields (F08), business calendars and
+  holiday-aware deadlines (F10), import mappings and HMAC export seals (F11), HTMX partials (F12).
+- G01 party addresses feeding the C01 buyer-address mention automatically.
 
 ## [0.1.0] - 2026-07-19
 

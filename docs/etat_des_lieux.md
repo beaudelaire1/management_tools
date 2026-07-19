@@ -3,6 +3,16 @@
 Date de vérification : 2026-07-19.
 Commit de référence : `b1a9006` (fusion de la PR #4, portail configurable par brique).
 
+> **Addendum (même jour, après complétion du catalogue).** Depuis ce constat, l'intégralité du
+> catalogue du cahier des charges a été implémentée en baseline : C01 complété (mentions
+> obligatoires + PDF déterministe), lots 4 (G06–G15), 5 (P10–P12), 6 (C04–C07), 7 (C08–C13, C15),
+> 8 (C14, adaptateurs), et les compléments fondations F06–F12. La chaîne qualité complète a été
+> rejouée après chaque lot : au dernier passage, 152 tests passent avec 94,15 % de couverture,
+> ruff/mypy/bandit/pip-audit au vert, migrations complètes appliquées depuis une base vierge.
+> Le détail des critères d'acceptation couverts et des limites restantes (contrats d'interface
+> de la section 9, adaptateur de plateforme agréée, validation expert-comptable) est maintenu
+> dans `spec_traceability.md`. Les sections ci-dessous décrivent l'état AVANT cette complétion.
+
 Ce document est un constat d'ingénierie : chaque affirmation de la section « Vérification » a été obtenue en
 exécutant réellement la chaîne qualité de la CI (`.github/workflows/ci.yml`) sur un environnement propre
 (Python 3.13, PostgreSQL 16.13, installation depuis `requirements.lock`), et non en lisant la documentation.

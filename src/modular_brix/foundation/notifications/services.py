@@ -61,6 +61,17 @@ def queue_notification(
         is_active=True,
     ).exists():
         raise ValueError("A notification recipient must actively belong to the organization.")
+    if recipient_user_id is not None:
+        from .models import NotificationPreference, NotificationSuppression
+
+        if NotificationSuppression.objects.filter(
+            organization_id=organization_id, recipient_user_id=recipient_user_id, channel=channel
+        ).exists():
+            raise ValueError("This recipient and channel are on the suppression list.")
+        if NotificationPreference.objects.filter(
+            organization_id=organization_id, user_id=recipient_user_id, channel=channel, is_enabled=False
+        ).exists():
+            raise ValueError("This recipient has disabled this notification channel.")
     notification, created = Notification.objects.get_or_create(
         organization_id=organization_id,
         idempotency_key=idempotency_key,

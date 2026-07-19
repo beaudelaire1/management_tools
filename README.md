@@ -5,23 +5,24 @@ Neutral, installable Django building blocks for management, finance, and steerin
 ## Project status
 
 This repository is a **pre-release domain foundation**, not a complete ERP and not production-ready accounting
-software. The implemented bricks provide models, migrations, transactional services, invariants, and tests. Most
-specialized APIs, asynchronous tasks, external adapters, and regulated accounting capabilities are still to be
-built. The optional `modular_brix.portal` app now provides an authenticated server-rendered interface for all
-implemented domain resources and the core quote-to-cash workflow.
+software. The implemented bricks provide models, migrations, transactional services, invariants, and tests.
+Specialized APIs, asynchronous tasks, and real external adapters are still to be built. The optional
+`modular_brix.portal` app provides an authenticated server-rendered interface for the commercial-cycle
+resources and the complete quote-to-cash workflow, including compliant invoice PDF download.
 
-Implemented baselines:
+Implemented baselines — every brick of the specification catalogue:
 
-- Foundation: F01-F12
-- Management: G01-G05
-- Finance: C01-C03
-- Steering: P01-P09 and P13
+- Foundation: F01-F12 (including document signatures and file-acceptance controls, notification
+  suppression/preferences, custom fields, business calendars, import mappings and export seals, UI partials)
+- Management: G01-G15
+- Finance: C01-C15 (invoicing with the full mandatory-mention snapshot and deterministic PDF, payments,
+  receivables, expenses, payables, banking, pre-accounting, double-entry ledger, subledger lettering,
+  analytic, tax, fixed assets, closing, e-invoicing adapters, FEC export)
+- Steering: P01-P13
 
-Not started:
-
-- Operations and workforce management: G06-G15 and P10-P12
-- Expenses, supplier accounting, banking, general and analytical accounting, tax, fixed assets, closing,
-  electronic invoicing, and FEC: C04-C15
+Every brick remains a baseline: core models, invariants, transactional services and acceptance-criteria
+tests are in place, while the complete interface contract of section 9 (dashboards, list/detail templates
+per brick), asynchronous processing, and real platform adapters remain to deliver.
 
 The exact implemented scope and explicit limits are maintained in `docs/spec_traceability.md` and each brick's
 README.

@@ -30,6 +30,9 @@ class Document(models.Model):
         ]
 
 
+SIGNATURE_IMMUTABLE_ERROR = "A document signature can never be modified or deleted."
+
+
 class DocumentVersion(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     document = models.ForeignKey(Document, on_delete=models.PROTECT, related_name="versions")
@@ -57,3 +60,28 @@ class DocumentVersion(models.Model):
         indexes = [
             models.Index(fields=["document", "is_current"], name="idx_document_current"),
         ]
+
+
+class DocumentSignature(models.Model):
+    """Signature over one exact version content: what was signed can never drift (F06)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    version = models.ForeignKey(DocumentVersion, on_delete=models.PROTECT, related_name="signatures")
+    signer_name = models.CharField(max_length=255)
+    signed_content_sha256 = models.CharField(max_length=64)
+    signed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["version", "signer_name"], name="uq_document_signature_signer"
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValueError(SIGNATURE_IMMUTABLE_ERROR)
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError(SIGNATURE_IMMUTABLE_ERROR)

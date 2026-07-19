@@ -1,0 +1,8 @@
+{# F12 partial: search/filter result rows, swappable by HTMX (hx-target on the table body). #}
+<tbody id="list-results">
+{% for row in rows %}
+  <tr>{% for cell in row.cells %}<td>{{ cell }}</td>{% endfor %}</tr>
+{% empty %}
+  <tr><td colspan="{{ columns|default:1 }}" class="empty-row">{{ empty_label|default:"Aucun résultat" }}</td></tr>
+{% endfor %}
+</tbody>

@@ -46,3 +46,27 @@ class PaymentTerm(models.Model):
     label = models.CharField(max_length=120)
     days = models.PositiveSmallIntegerField()
     is_active = models.BooleanField(default=True)
+
+
+class BusinessCalendar(models.Model):
+    """Organization working calendar; weekends plus listed holidays are non-working (F10)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.OneToOneField(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="business_calendar",
+    )
+    country_code = models.CharField(max_length=2, default="FR")
+
+
+class Holiday(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    calendar = models.ForeignKey(BusinessCalendar, on_delete=models.CASCADE, related_name="holidays")
+    day = models.DateField()
+    label = models.CharField(max_length=120)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["calendar", "day"], name="uq_holiday_day")
+        ]

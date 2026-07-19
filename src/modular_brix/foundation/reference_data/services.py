@@ -50,3 +50,27 @@ def current_tax_code(*, code: str, on_date: date) -> TaxCode | None:
         .order_by("-valid_from")
         .first()
     )
+
+
+def is_business_day(*, organization_id: str, day) -> bool:
+    """Weekends and listed holidays are non-working (F10)."""
+    from .models import Holiday
+
+    if day.weekday() >= 5:
+        return False
+    return not Holiday.objects.filter(calendar__organization_id=organization_id, day=day).exists()
+
+
+def add_business_days(*, organization_id: str, start, days: int):
+    """Deadline computation that skips weekends and holidays (F10)."""
+    from datetime import timedelta
+
+    if days < 0:
+        raise ValueError("Business-day offsets are forward only.")
+    current = start
+    remaining = days
+    while remaining > 0:
+        current += timedelta(days=1)
+        if is_business_day(organization_id=organization_id, day=current):
+            remaining -= 1
+    return current

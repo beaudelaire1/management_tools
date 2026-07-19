@@ -32,7 +32,11 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-"modular_brix.ui" = ["templates/ui/*.html"]
+"modular_brix.ui" = [
+  "templates/ui/*.html",
+  "templates/ui/components/*.html",
+  "templates/ui/partials/*.html",
+]
 "modular_brix.portal" = [
   "templates/portal/*.html",
   "templates/portal/components/*.html",

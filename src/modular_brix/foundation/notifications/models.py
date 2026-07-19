@@ -59,3 +59,51 @@ class DeliveryAttempt(models.Model):
                 name="uq_delivery_attempt_number",
             )
         ]
+
+
+class NotificationSuppression(models.Model):
+    """A suppressed recipient/channel pair never receives sends again until lifted (F07)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="notification_suppressions",
+    )
+    recipient_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="notification_suppressions"
+    )
+    channel = models.CharField(max_length=24)
+    reason = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "recipient_user", "channel"],
+                name="uq_notification_suppression",
+            )
+        ]
+
+
+class NotificationPreference(models.Model):
+    """Per-user channel opt-out; absence of a row means the channel is enabled (F07)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="notification_preferences",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="notification_preferences"
+    )
+    channel = models.CharField(max_length=24)
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "user", "channel"], name="uq_notification_preference"
+            )
+        ]
