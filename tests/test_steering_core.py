@@ -121,7 +121,7 @@ def test_widget_catalog_and_permission_enforcement() -> None:
         get_widget_data(widget_id=str(widget.id), membership_id=str(membership.id))  # no bypass
 
     Role.objects.create(code="reader", label="Reader", can_read=True)
-    assign_role(membership_id=str(membership.id), role_code="reader")
+    assign_role(membership_id=str(membership.id), role_code="reader", trusted_system=True)
     data = get_widget_data(widget_id=str(widget.id), membership_id=str(membership.id))
     assert data.value == Decimal("1000")
 

@@ -47,11 +47,13 @@ def create_workflow_transition(
 ) -> WorkflowTransition:
     if WorkflowInstance.objects.filter(definition_id=definition_id).exists():
         raise ValueError("A definition with running instances cannot be modified; create a new version.")
+    source_state = WorkflowState.objects.get(id=source_state_id, definition_id=definition_id)
+    target_state = WorkflowState.objects.get(id=target_state_id, definition_id=definition_id)
     return WorkflowTransition.objects.create(
         definition_id=definition_id,
         code=code,
-        source_state_id=source_state_id,
-        target_state_id=target_state_id,
+        source_state=source_state,
+        target_state=target_state,
         require_separate_approver=require_separate_approver,
     )
 
@@ -65,10 +67,13 @@ def start_workflow_instance(
     object_id: str,
     requester_user_id: int | None,
 ) -> WorkflowInstance:
-    initial_state = WorkflowState.objects.get(definition_id=definition_id, is_initial=True)
+    definition = WorkflowDefinition.objects.get(id=definition_id, is_active=True)
+    if str(definition.organization_id) != str(organization_id):
+        raise ValueError("A workflow instance and its definition must belong to the same organization.")
+    initial_state = WorkflowState.objects.get(definition=definition, is_initial=True)
     return WorkflowInstance.objects.create(
         organization_id=organization_id,
-        definition_id=definition_id,
+        definition=definition,
         current_state=initial_state,
         object_type=object_type,
         object_id=object_id,

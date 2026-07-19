@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.db import transaction
 
+from modular_brix.steering.indicators.models import IndicatorDefinition
 from modular_brix.steering.indicators.services import latest_value
 
 from .models import KeyResult, Objective
@@ -23,9 +24,13 @@ def create_objective(*, organization_id: str, label: str, owner: str, horizon: d
 
 @transaction.atomic
 def add_key_result(*, objective_id: str, indicator_id: str, target_value: Decimal) -> KeyResult:
+    objective = Objective.objects.get(id=objective_id)
+    indicator = IndicatorDefinition.objects.get(id=indicator_id)
+    if objective.organization_id != indicator.organization_id:
+        raise ValueError("An objective and its indicator must belong to the same organization.")
     return KeyResult.objects.create(
-        objective_id=objective_id,
-        indicator_id=indicator_id,
+        objective=objective,
+        indicator=indicator,
         target_value=target_value,
     )
 

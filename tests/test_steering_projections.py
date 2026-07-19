@@ -192,7 +192,7 @@ def test_report_runs_are_permission_checked_and_reproducible() -> None:
         run_report(report_id=str(report.id), membership_id=str(membership.id))  # unauthorized blocked
 
     Role.objects.create(code="report-reader", label="Reader", can_read=True)
-    assign_role(membership_id=str(membership.id), role_code="report-reader")
+    assign_role(membership_id=str(membership.id), role_code="report-reader", trusted_system=True)
 
     run_1, rows_1 = run_report(
         report_id=str(report.id),

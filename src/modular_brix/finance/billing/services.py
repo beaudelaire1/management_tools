@@ -16,6 +16,8 @@ from .models import CreditNote, Invoice, InvoiceLine
 def create_invoice_from_order(*, order_id: str) -> Invoice:
     """Idempotent conversion: the same order always yields the same single invoice."""
     order = SalesOrder.objects.select_for_update().select_related("party", "organization").get(id=order_id)
+    if order.party.organization_id != order.organization_id:
+        raise ValueError("An invoice source order and its party must belong to the same organization.")
     existing = Invoice.objects.filter(sales_order=order).first()
     if existing is not None:
         return existing

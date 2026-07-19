@@ -38,12 +38,16 @@ def test_permissions_default_deny_then_allow_by_role() -> None:
     user = user_model.objects.create_user(username="perm_user", email="perm@example.test", password="StrongPass123!")
     membership = user.memberships.create(organization=org)
 
-    assert has_action_permission(membership_id=str(membership.id), action="export") is False
+    assert has_action_permission(
+        membership_id=str(membership.id), action="export", organization_id=str(org.id)
+    ) is False
 
     Role.objects.create(code="finance-export", label="Finance export", can_export=True)
-    assign_role(membership_id=str(membership.id), role_code="finance-export")
+    assign_role(membership_id=str(membership.id), role_code="finance-export", trusted_system=True)
 
-    assert has_action_permission(membership_id=str(membership.id), action="export") is True
+    assert has_action_permission(
+        membership_id=str(membership.id), action="export", organization_id=str(org.id)
+    ) is True
 
 
 @pytest.mark.django_db

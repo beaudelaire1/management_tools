@@ -99,9 +99,11 @@ def test_delegation_grants_temporary_permission_and_decisions_are_logged() -> No
     manager = _make_membership(org, "manager_user")
     substitute = _make_membership(org, "substitute_user")
     role = Role.objects.create(code="validator", label="Validator", can_validate=True)
-    assign_role(membership_id=str(manager.id), role_code=role.code)
+    assign_role(membership_id=str(manager.id), role_code=role.code, trusted_system=True)
 
-    assert has_action_permission(membership_id=str(substitute.id), action="validate") is False
+    assert has_action_permission(
+        membership_id=str(substitute.id), action="validate", organization_id=str(org.id)
+    ) is False
 
     with pytest.raises(ValueError, match="Self-delegation"):
         delegate_role(
@@ -119,7 +121,9 @@ def test_delegation_grants_temporary_permission_and_decisions_are_logged() -> No
         starts_at=timezone.now() - timezone.timedelta(hours=1),
         ends_at=timezone.now() + timezone.timedelta(days=1),
     )
-    assert has_action_permission(membership_id=str(substitute.id), action="validate") is True
+    assert has_action_permission(
+        membership_id=str(substitute.id), action="validate", organization_id=str(org.id)
+    ) is True
 
     reasons = set(
         PolicyDecisionLog.objects.filter(membership_id=substitute.id, action="validate").values_list(

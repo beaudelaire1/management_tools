@@ -45,6 +45,8 @@ class Invoice(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        if self._state.adding and self.status != "draft":
+            raise ValueError("An invoice must be created as a draft and issued through the issuance service.")
         if not self._state.adding:
             original = Invoice.objects.get(pk=self.pk)
             if original.status == "issued":
@@ -70,6 +72,16 @@ class InvoiceLine(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["invoice", "position"], name="uq_invoice_line_position")
         ]
+
+    def save(self, *args, **kwargs):
+        if Invoice.objects.filter(id=self.invoice_id, status="issued").exists():
+            raise ValueError("Lines of an issued invoice are immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if Invoice.objects.filter(id=self.invoice_id, status="issued").exists():
+            raise ValueError("Lines of an issued invoice are immutable.")
+        return super().delete(*args, **kwargs)
 
 
 class CreditNote(models.Model):

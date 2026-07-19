@@ -5,6 +5,22 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ## [Unreleased]
 
+### Security
+
+- Bind permission decisions to an active membership, target organization, and optional data scope; cross-tenant
+  dashboard and report access is denied and logged.
+- Restrict role assignment and delegation to active memberships in the same organization; a delegation can no
+  longer grant a role or scope the delegator does not hold.
+- Reject cross-organization links in quotes, invoices, payments, dashboard widgets, objectives, and workflow
+  instances.
+- Protect sent quote versions, issued invoices, and their lines against ORM mutation and direct PostgreSQL writes.
+- Reject idempotency-key replay when payment or notification payloads differ.
+
+### Changed
+
+- CI and the documented setup now install the pinned `requirements.lock` before the editable package.
+- Project status documentation now distinguishes implemented baselines from complete, production-ready bricks.
+
 ### Added
 
 - Lot 0 foundation baseline: organizations (F01 partial), accounts and invitations (F02 partial),

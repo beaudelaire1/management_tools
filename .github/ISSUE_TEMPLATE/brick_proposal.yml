@@ -1,0 +1,34 @@
+name: Brick proposal
+description: Propose a specification-backed brick or capability increment.
+title: "proposal: "
+labels:
+  - enhancement
+body:
+  - type: input
+    id: reference
+    attributes:
+      label: Specification reference
+      description: For example F03, G06, P10, C04, or a numbered global requirement.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Required outcome
+      description: Describe the generic business capability without client-specific vocabulary.
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Invariants and acceptance criteria
+      description: Include permissions, organization isolation, audit, idempotency, and financial constraints where applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and references
+      description: List prerequisite bricks and authoritative technical or regulatory sources.
+    validations:
+      required: true
