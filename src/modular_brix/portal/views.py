@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.views import redirect_to_login
+from django.apps import apps
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Model, Q, Sum
@@ -13,23 +14,9 @@ from django.urls import reverse
 from django.views import View
 from django.views.decorators.http import require_http_methods, require_POST
 
-from modular_brix.finance.billing.models import Invoice
-from modular_brix.finance.billing.services import create_invoice_from_order, invoice_remaining, issue_invoice
-from modular_brix.finance.payments.models import Payment
-from modular_brix.finance.payments.services import allocate_payment, payment_unallocated, register_payment
 from modular_brix.foundation.accounts.models import Membership
 from modular_brix.foundation.organizations.models import Organization
 from modular_brix.foundation.permissions.policies import has_action_permission
-from modular_brix.management.crm.models import Lead
-from modular_brix.management.parties.services import create_party
-from modular_brix.management.sales.models import Quote, SalesOrder
-from modular_brix.management.sales.services import (
-    accept_quote,
-    add_quote_line,
-    convert_quote_to_order,
-    create_quote,
-    send_quote,
-)
 
 from .forms import (
     LeadCreateForm,
@@ -40,7 +27,8 @@ from .forms import (
     QuoteCreateForm,
     QuoteLineForm,
 )
-from .resources import Resource, get_resource, navigation_groups, serialize_fields
+from .configuration import load_portal_configuration
+from .resources import Resource, available_resources, get_resource, navigation_groups, serialize_fields
 
 
 def _active_membership(user: AbstractBaseUser, organization: Organization) -> Membership:
@@ -83,10 +71,12 @@ def _portal_context(
     membership: Membership | None = None,
     **extra: Any,
 ) -> dict[str, Any]:
+    portal_configuration = load_portal_configuration()
     context: dict[str, Any] = {
         "organization": organization,
         "membership": membership,
         "navigation_groups": navigation_groups(),
+        "portal_configuration": portal_configuration,
         "organization_memberships": Membership.objects.filter(
             user=request.user,
             is_active=True,
@@ -142,17 +132,47 @@ class HomeView(OrganizationViewMixin, View):
 
     def get(self, request: HttpRequest, org_slug: str) -> HttpResponse:
         organization_id = self.organization.id
-        issued_invoices = Invoice.objects.filter(organization_id=organization_id, status="issued")
-        invoice_total = issued_invoices.aggregate(total=Sum("total_incl_tax"))["total"] or 0
-        paid_total = Payment.objects.filter(organization_id=organization_id).aggregate(total=Sum("amount"))["total"] or 0
-        stats = (
-            {"label": "Tiers actifs", "value": get_resource("parties").queryset(str(organization_id)).filter(is_active=True).count(), "resource": "parties"},
-            {"label": "Devis", "value": get_resource("quotes").queryset(str(organization_id)).count(), "resource": "quotes"},
-            {"label": "Factures émises", "value": issued_invoices.count(), "resource": "invoices"},
-            {"label": "Paiements", "value": get_resource("payments").queryset(str(organization_id)).count(), "resource": "payments"},
+        resource_keys = {resource.key for resource in available_resources()}
+        invoice_model = apps.get_model("finance_billing.Invoice") if "invoices" in resource_keys else None
+        if invoice_model is not None:
+            issued_invoices = invoice_model.objects.filter(
+                organization_id=organization_id,
+                status="issued",
+            )
+            invoice_total = issued_invoices.aggregate(total=Sum("total_incl_tax"))["total"] or 0
+            recent_invoices = issued_invoices.select_related("party").order_by("-issue_date", "-created_at")[:5]
+        else:
+            invoice_total = 0
+            recent_invoices = []
+        payment_model = apps.get_model("finance_payments.Payment") if "payments" in resource_keys else None
+        paid_total = (
+            payment_model.objects.filter(organization_id=organization_id).aggregate(total=Sum("amount"))["total"] or 0
+            if payment_model is not None
+            else 0
         )
-        recent_invoices = issued_invoices.select_related("party").order_by("-issue_date", "-created_at")[:5]
-        recent_quotes = Quote.objects.filter(organization_id=organization_id).select_related("party").order_by("-created_at")[:5]
+        stat_definitions: tuple[tuple[str, str, dict[str, Any]], ...] = (
+            ("parties", "Tiers actifs", {"is_active": True}),
+            ("quotes", "Devis", {}),
+            ("invoices", "Factures émises", {"status": "issued"}),
+            ("payments", "Paiements", {}),
+        )
+        stats = tuple(
+            {
+                "label": label,
+                "value": get_resource(key).queryset(str(organization_id)).filter(**filters).count(),
+                "resource": key,
+            }
+            for key, label, filters in stat_definitions
+            if key in resource_keys
+        )
+        quote_model = apps.get_model("management_sales.Quote") if "quotes" in resource_keys else None
+        recent_quotes = (
+            quote_model.objects.filter(organization_id=organization_id)
+            .select_related("party")
+            .order_by("-created_at")[:5]
+            if quote_model is not None
+            else []
+        )
         return render(
             request,
             self.template_name,
@@ -164,6 +184,7 @@ class HomeView(OrganizationViewMixin, View):
                 paid_total=paid_total,
                 recent_invoices=recent_invoices,
                 recent_quotes=recent_quotes,
+                available_resource_keys=resource_keys,
             ),
         )
 
@@ -244,6 +265,8 @@ class ResourceDetailView(OrganizationViewMixin, View):
                 "deliveries": instance.deliveries.order_by("-created_at"),
             }
         if resource.key == "invoices":
+            from modular_brix.finance.billing.services import invoice_remaining
+
             remaining = invoice_remaining(instance) if instance.status == "issued" else None
             return {
                 "lines": instance.lines.order_by("position"),
@@ -252,6 +275,8 @@ class ResourceDetailView(OrganizationViewMixin, View):
                 "remaining": remaining,
             }
         if resource.key == "payments":
+            from modular_brix.finance.payments.services import payment_unallocated
+
             return {
                 "allocations": instance.allocations.select_related("invoice").order_by("-created_at"),
                 "unallocated": payment_unallocated(instance),
@@ -295,14 +320,24 @@ def _authorized_form_view(
     return organization, membership
 
 
+def _require_resource(resource_key: str) -> Resource:
+    try:
+        return get_resource(resource_key)
+    except LookupError as exc:
+        raise Http404 from exc
+
+
 @require_http_methods(["GET", "POST"])
 def party_create(request: HttpRequest, org_slug: str) -> HttpResponse:
+    _require_resource("parties")
     access = _authorized_form_view(request, org_slug)
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
     form = PartyCreateForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        from modular_brix.management.parties.services import create_party
+
         party = create_party(organization_id=str(organization.id), **form.cleaned_data)
         messages.success(request, "Le tiers a été créé.")
         return redirect("portal:resource-detail", org_slug=org_slug, resource_key="parties", pk=party.pk)
@@ -311,13 +346,15 @@ def party_create(request: HttpRequest, org_slug: str) -> HttpResponse:
 
 @require_http_methods(["GET", "POST"])
 def lead_create(request: HttpRequest, org_slug: str) -> HttpResponse:
+    _require_resource("leads")
     access = _authorized_form_view(request, org_slug)
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
     form = LeadCreateForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        lead = Lead.objects.create(organization=organization, **form.cleaned_data)
+        lead_model = apps.get_model("management_crm.Lead")
+        lead = lead_model.objects.create(organization=organization, **form.cleaned_data)
         messages.success(request, "Le prospect a été créé.")
         return redirect("portal:resource-detail", org_slug=org_slug, resource_key="leads", pk=lead.pk)
     return render(request, "portal/form.html", _form_context(request, organization, membership, form=form, title="Nouveau prospect", submit_label="Créer le prospect", cancel_url=reverse("portal:resource-list", kwargs={"org_slug": org_slug, "resource_key": "leads"})))
@@ -325,12 +362,15 @@ def lead_create(request: HttpRequest, org_slug: str) -> HttpResponse:
 
 @require_http_methods(["GET", "POST"])
 def quote_create_view(request: HttpRequest, org_slug: str) -> HttpResponse:
+    _require_resource("quotes")
     access = _authorized_form_view(request, org_slug)
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
     form = QuoteCreateForm(request.POST or None, organization_id=str(organization.id))
     if request.method == "POST" and form.is_valid():
+        from modular_brix.management.sales.services import create_quote
+
         quote = create_quote(
             organization_id=str(organization.id),
             party_id=str(form.cleaned_data["party"].id),
@@ -343,13 +383,17 @@ def quote_create_view(request: HttpRequest, org_slug: str) -> HttpResponse:
 
 @require_http_methods(["GET", "POST"])
 def quote_line_create(request: HttpRequest, org_slug: str, quote_id: str) -> HttpResponse:
+    _require_resource("quotes")
     access = _authorized_form_view(request, org_slug)
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
-    quote = get_object_or_404(Quote, id=quote_id, organization=organization, status="draft")
+    quote_model = apps.get_model("management_sales.Quote")
+    quote = get_object_or_404(quote_model, id=quote_id, organization=organization, status="draft")
     form = QuoteLineForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        from modular_brix.management.sales.services import add_quote_line
+
         add_quote_line(quote_id=str(quote.id), **form.cleaned_data)
         messages.success(request, "La ligne a été ajoutée au devis.")
         return redirect("portal:resource-detail", org_slug=org_slug, resource_key="quotes", pk=quote.pk)
@@ -358,12 +402,16 @@ def quote_line_create(request: HttpRequest, org_slug: str, quote_id: str) -> Htt
 
 @require_POST
 def quote_send_view(request: HttpRequest, org_slug: str, quote_id: str) -> HttpResponse:
+    _require_resource("quotes")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, _ = access
-    quote = get_object_or_404(Quote, id=quote_id, organization=organization)
+    quote_model = apps.get_model("management_sales.Quote")
+    quote = get_object_or_404(quote_model, id=quote_id, organization=organization)
     try:
+        from modular_brix.management.sales.services import send_quote
+
         send_quote(quote_id=str(quote.id))
     except ValueError as exc:
         messages.error(request, str(exc))
@@ -374,13 +422,17 @@ def quote_send_view(request: HttpRequest, org_slug: str, quote_id: str) -> HttpR
 
 @require_http_methods(["GET", "POST"])
 def quote_accept_view(request: HttpRequest, org_slug: str, quote_id: str) -> HttpResponse:
+    _require_resource("quotes")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
-    quote = get_object_or_404(Quote, id=quote_id, organization=organization, status="sent")
+    quote_model = apps.get_model("management_sales.Quote")
+    quote = get_object_or_404(quote_model, id=quote_id, organization=organization, status="sent")
     form = QuoteAcceptanceForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        from modular_brix.management.sales.services import accept_quote
+
         accept_quote(quote_id=str(quote.id), **form.cleaned_data)
         messages.success(request, "Le devis a été accepté avec sa preuve.")
         return redirect("portal:resource-detail", org_slug=org_slug, resource_key="quotes", pk=quote.pk)
@@ -389,12 +441,17 @@ def quote_accept_view(request: HttpRequest, org_slug: str, quote_id: str) -> Htt
 
 @require_POST
 def quote_convert_view(request: HttpRequest, org_slug: str, quote_id: str) -> HttpResponse:
+    _require_resource("quotes")
+    _require_resource("orders")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, _ = access
-    quote = get_object_or_404(Quote, id=quote_id, organization=organization)
+    quote_model = apps.get_model("management_sales.Quote")
+    quote = get_object_or_404(quote_model, id=quote_id, organization=organization)
     try:
+        from modular_brix.management.sales.services import convert_quote_to_order
+
         order = convert_quote_to_order(quote_id=str(quote.id))
     except ValueError as exc:
         messages.error(request, str(exc))
@@ -405,11 +462,16 @@ def quote_convert_view(request: HttpRequest, org_slug: str, quote_id: str) -> Ht
 
 @require_POST
 def order_invoice_view(request: HttpRequest, org_slug: str, order_id: str) -> HttpResponse:
+    _require_resource("orders")
+    _require_resource("invoices")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, _ = access
-    order = get_object_or_404(SalesOrder, id=order_id, organization=organization)
+    from modular_brix.finance.billing.services import create_invoice_from_order
+
+    order_model = apps.get_model("management_sales.SalesOrder")
+    order = get_object_or_404(order_model, id=order_id, organization=organization)
     invoice = create_invoice_from_order(order_id=str(order.id))
     messages.success(request, "La facture brouillon a été créée depuis la commande.")
     return redirect("portal:resource-detail", org_slug=org_slug, resource_key="invoices", pk=invoice.pk)
@@ -417,11 +479,15 @@ def order_invoice_view(request: HttpRequest, org_slug: str, order_id: str) -> Ht
 
 @require_POST
 def invoice_issue_view(request: HttpRequest, org_slug: str, invoice_id: str) -> HttpResponse:
+    _require_resource("invoices")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, _ = access
-    invoice = get_object_or_404(Invoice, id=invoice_id, organization=organization)
+    from modular_brix.finance.billing.services import issue_invoice
+
+    invoice_model = apps.get_model("finance_billing.Invoice")
+    invoice = get_object_or_404(invoice_model, id=invoice_id, organization=organization)
     try:
         issue_invoice(invoice_id=str(invoice.id))
     except ValueError as exc:
@@ -433,12 +499,15 @@ def invoice_issue_view(request: HttpRequest, org_slug: str, invoice_id: str) -> 
 
 @require_http_methods(["GET", "POST"])
 def payment_create_view(request: HttpRequest, org_slug: str) -> HttpResponse:
+    _require_resource("payments")
     access = _authorized_form_view(request, org_slug)
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
     form = PaymentCreateForm(request.POST or None, organization_id=str(organization.id))
     if request.method == "POST" and form.is_valid():
+        from modular_brix.finance.payments.services import register_payment
+
         cleaned = form.cleaned_data
         payment = register_payment(
             organization_id=str(organization.id),
@@ -456,11 +525,16 @@ def payment_create_view(request: HttpRequest, org_slug: str) -> HttpResponse:
 
 @require_http_methods(["GET", "POST"])
 def payment_allocate_view(request: HttpRequest, org_slug: str, payment_id: str) -> HttpResponse:
+    _require_resource("payments")
+    _require_resource("invoices")
     access = _authorized_form_view(request, org_slug, action="validate")
     if isinstance(access, HttpResponse):
         return access
     organization, membership = access
-    payment = get_object_or_404(Payment, id=payment_id, organization=organization)
+    from modular_brix.finance.payments.services import allocate_payment, payment_unallocated
+
+    payment_model = apps.get_model("finance_payments.Payment")
+    payment = get_object_or_404(payment_model, id=payment_id, organization=organization)
     form = PaymentAllocationForm(
         request.POST or None,
         organization_id=str(organization.id),

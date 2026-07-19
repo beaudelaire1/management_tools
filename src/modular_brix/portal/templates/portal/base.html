@@ -2,8 +2,8 @@
 {% load static %}
 
 {% block title %}{{ page_title|default:"Portail" }} · {{ organization.legal_name|default:"Modular Brix" }}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'portal/app.css' %}">{% endblock %}
-{% block body_class %}portal-shell{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'portal/app.css' %}"><style id="portal-theme">:root{ {% for name, value in portal_configuration.css_variables %}--{{ name }}: {{ value }};{% endfor %} }</style>{% endblock %}
+{% block body_class %}portal-shell {{ portal_configuration.body_classes }}{% endblock %}
 
 {% block header %}
 <div class="app-header">

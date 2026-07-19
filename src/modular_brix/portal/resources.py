@@ -4,7 +4,11 @@ from decimal import Decimal
 from typing import Any
 
 from django.apps import apps
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model, QuerySet
+from django.utils.module_loading import import_string
+
+from .configuration import load_portal_configuration
 
 
 @dataclass(frozen=True)
@@ -28,6 +32,10 @@ class Resource:
     ordering: tuple[str, ...] = ("-pk",)
     create_url_name: str = ""
     detail_template: str = "portal/resource_detail.html"
+
+    @property
+    def brick_key(self) -> str:
+        return self.model_label.partition(".")[0]
 
     @property
     def model(self) -> type[Model]:
@@ -187,16 +195,56 @@ RESOURCES = (
 RESOURCE_BY_KEY = {resource.key: resource for resource in RESOURCES}
 
 
+def registered_resources() -> tuple[Resource, ...]:
+    resources = list(RESOURCES)
+    for dotted_path in load_portal_configuration().resource_providers:
+        provider = import_string(dotted_path)
+        provided = provider()
+        if not isinstance(provided, (list, tuple)) or any(
+            not isinstance(resource, Resource) for resource in provided
+        ):
+            raise ImproperlyConfigured(
+                f"Portal resource provider '{dotted_path}' must return a list or tuple of Resource objects."
+            )
+        resources.extend(provided)
+    keys = [resource.key for resource in resources]
+    duplicates = sorted({key for key in keys if keys.count(key) > 1})
+    if duplicates:
+        raise ImproperlyConfigured(f"Duplicate portal resource keys: {', '.join(duplicates)}.")
+    return tuple(resources)
+
+
+def available_resources() -> tuple[Resource, ...]:
+    enabled_bricks = load_portal_configuration().enabled_bricks
+    resources = []
+    for resource in registered_resources():
+        if enabled_bricks is not None and resource.brick_key not in enabled_bricks:
+            continue
+        try:
+            resource.model
+        except LookupError:
+            continue
+        resources.append(resource)
+    return tuple(resources)
+
+
 def get_resource(key: str) -> Resource:
-    try:
-        return RESOURCE_BY_KEY[key]
-    except KeyError as exc:
-        raise LookupError(f"Unknown portal resource: {key}") from exc
+    resource = next((resource for resource in available_resources() if resource.key == key), None)
+    if resource is None:
+        raise LookupError(f"Unknown or disabled portal resource: {key}")
+    return resource
 
 
 def navigation_groups() -> tuple[tuple[str, tuple[Resource, ...]], ...]:
-    categories = ("Gestion", "Finance", "Pilotage", "Socle")
-    return tuple((category, tuple(item for item in RESOURCES if item.category == category)) for category in categories)
+    resources = available_resources()
+    preferred_categories = ("Gestion", "Finance", "Pilotage", "Socle")
+    extra_categories = sorted({resource.category for resource in resources} - set(preferred_categories))
+    categories = (*preferred_categories, *extra_categories)
+    return tuple(
+        (category, tuple(item for item in resources if item.category == category))
+        for category in categories
+        if any(item.category == category for item in resources)
+    )
 
 
 def resolve_value(instance: Model, path: str) -> Any:

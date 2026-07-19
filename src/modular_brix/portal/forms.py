@@ -1,9 +1,35 @@
 from decimal import Decimal
 
 from django import forms
+from django.apps import apps
+from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
 
-from modular_brix.finance.billing.models import Invoice
-from modular_brix.management.parties.models import Party
+
+class ScopedModelChoiceField(forms.ChoiceField):
+    """Model selector that does not import an optional brick at module import time."""
+
+    queryset: QuerySet | None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.queryset = None
+
+    def bind_queryset(self, queryset: QuerySet) -> None:
+        self.queryset = queryset
+        empty = [('', '---------')] if not self.required else []
+        self.choices = [*empty, *((str(instance.pk), str(instance)) for instance in queryset)]
+
+    def clean(self, value):
+        selected_id = super().clean(value)
+        if selected_id in self.empty_values:
+            return None
+        if self.queryset is None:
+            raise ValidationError("Cette sélection n’est pas disponible.", code="unavailable")
+        try:
+            return self.queryset.get(pk=selected_id)
+        except (ValueError, self.queryset.model.DoesNotExist) as exc:
+            raise ValidationError("Sélection invalide.", code="invalid_choice") from exc
 
 
 class PartyCreateForm(forms.Form):
@@ -21,16 +47,18 @@ class LeadCreateForm(forms.Form):
 
 
 class QuoteCreateForm(forms.Form):
-    party = forms.ModelChoiceField(label="Tiers", queryset=Party.objects.none())
+    party = ScopedModelChoiceField(label="Tiers")
     currency = forms.CharField(label="Devise", initial="EUR", min_length=3, max_length=3)
 
     def __init__(self, *args, organization_id: str, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["party"].queryset = Party.objects.filter(
+        party_model = apps.get_model("management_parties.Party")
+        queryset = party_model.objects.filter(
             organization_id=organization_id,
             is_active=True,
             merged_into__isnull=True,
         ).order_by("display_name")
+        self.fields["party"].bind_queryset(queryset)
 
     def clean_currency(self) -> str:
         return self.cleaned_data["currency"].upper()
@@ -52,9 +80,8 @@ class QuoteAcceptanceForm(forms.Form):
 
 
 class PaymentCreateForm(forms.Form):
-    party = forms.ModelChoiceField(
+    party = ScopedModelChoiceField(
         label="Tiers",
-        queryset=Party.objects.none(),
         required=False,
         help_text="Laisser vide pour un paiement non identifié.",
     )
@@ -78,27 +105,30 @@ class PaymentCreateForm(forms.Form):
 
     def __init__(self, *args, organization_id: str, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["party"].queryset = Party.objects.filter(
+        party_model = apps.get_model("management_parties.Party")
+        queryset = party_model.objects.filter(
             organization_id=organization_id,
             is_active=True,
             merged_into__isnull=True,
         ).order_by("display_name")
+        self.fields["party"].bind_queryset(queryset)
 
     def clean_currency(self) -> str:
         return self.cleaned_data["currency"].upper()
 
 
 class PaymentAllocationForm(forms.Form):
-    invoice = forms.ModelChoiceField(label="Facture", queryset=Invoice.objects.none())
+    invoice = ScopedModelChoiceField(label="Facture")
     amount = forms.DecimalField(label="Montant à affecter", min_value=Decimal("0.01"), decimal_places=2)
 
     def __init__(self, *args, organization_id: str, party_id: str | None, currency: str, **kwargs):
         super().__init__(*args, **kwargs)
-        invoices = Invoice.objects.filter(
+        invoice_model = apps.get_model("finance_billing.Invoice")
+        invoices = invoice_model.objects.filter(
             organization_id=organization_id,
             status="issued",
             currency=currency,
         ).order_by("due_date", "number")
         if party_id is not None:
             invoices = invoices.filter(party_id=party_id)
-        self.fields["invoice"].queryset = invoices
+        self.fields["invoice"].bind_queryset(invoices)

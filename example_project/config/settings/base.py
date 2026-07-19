@@ -102,6 +102,23 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Client projects may override these tokens without copying templates or CSS.
+MODULAR_BRIX_PORTAL = {
+    "theme": {
+        "brand": "#0b6b57",
+        "brand_dark": "#074c3e",
+        "brand_soft": "#dff3ec",
+        "accent": "#e7a935",
+    },
+    "layout": {
+        "navigation": "left",  # left | right | top
+        "header": "sticky",  # sticky | static
+        "density": "comfortable",  # comfortable | compact
+    },
+    "enabled_bricks": None,  # None enables every installed brick.
+    "resource_providers": [],  # Dotted callables returning additional portal Resource objects.
+}
+
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "portal:organization-picker"
 LOGOUT_REDIRECT_URL = "login"
