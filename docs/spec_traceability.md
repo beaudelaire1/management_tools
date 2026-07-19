@@ -28,7 +28,7 @@
 - Governance: LICENSE, CONTRIBUTING, CHANGELOG, CODEOWNERS, PR template, initial commit
 - Environments: settings split local/test/production; production deploy check passes with --fail-level WARNING
 - Dependency lock: requirements.lock generated and audited (pip-audit: no known vulnerabilities)
-- Coverage gate: pytest --cov fail-under=85 (measured 96.54% after the security consolidation)
+- Coverage gate: pytest --cov fail-under=85 (measured 96.63% after the review follow-up)
 - F01 completed: all specified models, archive without delete
 - F02 extended: session revocation, MFA factor model, progressive lockout, anti-enumeration
 - F03 extended: data scopes, dated delegations, policy decision log, self-elevation blocked

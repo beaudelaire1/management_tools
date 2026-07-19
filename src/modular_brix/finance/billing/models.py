@@ -3,6 +3,14 @@ import uuid
 from django.db import models
 
 
+INVOICE_CREATE_DRAFT_ERROR = (
+    "An invoice must be created as a draft and issued through the issuance service."
+)
+INVOICE_IMMUTABLE_ERROR = "An issued invoice is immutable; correct it with a credit note."
+INVOICE_DELETE_ERROR = "An issued invoice can never be deleted."
+INVOICE_LINE_IMMUTABLE_ERROR = "Lines of an issued invoice are immutable."
+
+
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
@@ -46,16 +54,16 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if self._state.adding and self.status != "draft":
-            raise ValueError("An invoice must be created as a draft and issued through the issuance service.")
+            raise ValueError(INVOICE_CREATE_DRAFT_ERROR)
         if not self._state.adding:
             original = Invoice.objects.get(pk=self.pk)
             if original.status == "issued":
-                raise ValueError("An issued invoice is immutable; correct it with a credit note.")
+                raise ValueError(INVOICE_IMMUTABLE_ERROR)
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if self.status == "issued":
-            raise ValueError("An issued invoice can never be deleted.")
+            raise ValueError(INVOICE_DELETE_ERROR)
         return super().delete(*args, **kwargs)
 
 
@@ -75,12 +83,12 @@ class InvoiceLine(models.Model):
 
     def save(self, *args, **kwargs):
         if Invoice.objects.filter(id=self.invoice_id, status="issued").exists():
-            raise ValueError("Lines of an issued invoice are immutable.")
+            raise ValueError(INVOICE_LINE_IMMUTABLE_ERROR)
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         if Invoice.objects.filter(id=self.invoice_id, status="issued").exists():
-            raise ValueError("Lines of an issued invoice are immutable.")
+            raise ValueError(INVOICE_LINE_IMMUTABLE_ERROR)
         return super().delete(*args, **kwargs)
 
 

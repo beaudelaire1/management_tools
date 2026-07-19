@@ -5,7 +5,7 @@ from modular_brix.foundation.accounts.services import accept_invitation, invite_
 from modular_brix.foundation.audit.models import AuditEvent
 from modular_brix.foundation.audit.services import record_audit_event
 from modular_brix.foundation.organizations.services import create_organization_with_default_establishment
-from modular_brix.foundation.permissions.models import Role
+from modular_brix.foundation.permissions.models import PolicyDecisionLog, Role
 from modular_brix.foundation.permissions.policies import has_action_permission
 from modular_brix.foundation.permissions.services import assign_role
 
@@ -48,6 +48,20 @@ def test_permissions_default_deny_then_allow_by_role() -> None:
     assert has_action_permission(
         membership_id=str(membership.id), action="export", organization_id=str(org.id)
     ) is True
+
+    PolicyDecisionLog.objects.all().delete()
+    assert has_action_permission(
+        membership_id=str(membership.id),
+        action="unknown_action",
+        organization_id=str(org.id),
+    ) is False
+    decision = PolicyDecisionLog.objects.get(
+        membership=membership,
+        target_organization=org,
+        action="unknown_action",
+    )
+    assert decision.allowed is False
+    assert decision.reason == "unknown_action"
 
 
 @pytest.mark.django_db

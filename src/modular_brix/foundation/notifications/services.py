@@ -3,6 +3,7 @@ from typing import Protocol
 
 from django.db import transaction
 
+from modular_brix.common.idempotency import ensure_idempotent_replay
 from modular_brix.foundation.accounts.models import Membership
 
 from .models import DeliveryAttempt, MessageTemplate, Notification
@@ -83,8 +84,11 @@ def queue_notification(
             "subject": notification.subject,
             "body": notification.body,
         }
-        if replay_payload != stored_payload:
-            raise ValueError("An idempotency key cannot be reused with a different notification payload.")
+        ensure_idempotent_replay(
+            replay_payload=replay_payload,
+            stored_payload=stored_payload,
+            resource_name="notification",
+        )
     return notification
 
 

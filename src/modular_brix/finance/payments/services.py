@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum
 
+from modular_brix.common.idempotency import ensure_idempotent_replay
 from modular_brix.finance.billing.models import Invoice
 from modular_brix.finance.billing.services import invoice_remaining
 from modular_brix.management.parties.models import Party
@@ -52,8 +53,11 @@ def register_payment(
             "method": payment.method,
             "provider_reference": payment.provider_reference,
         }
-        if replay_payload != stored_payload:
-            raise ValueError("An idempotency key cannot be reused with a different payment payload.")
+        ensure_idempotent_replay(
+            replay_payload=replay_payload,
+            stored_payload=stored_payload,
+            resource_name="payment",
+        )
     return payment
 
 

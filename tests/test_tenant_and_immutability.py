@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from modular_brix.finance.billing.models import Invoice, InvoiceLine
 from modular_brix.finance.billing.services import create_invoice_from_order, issue_invoice
-from modular_brix.finance.payments.services import register_payment
+from modular_brix.finance.payments.services import allocate_payment, register_payment
 from modular_brix.foundation.notifications.services import queue_notification
 from modular_brix.foundation.organizations.services import create_organization_with_default_establishment
 from modular_brix.foundation.permissions.models import DataScope, PolicyDecisionLog, Role
@@ -188,6 +188,32 @@ def test_data_scope_and_delegation_cannot_be_broadened() -> None:
         scope_type="object",
         scope_ref="invoice-1",
     ) is False
+
+
+@pytest.mark.django_db
+def test_delegation_permission_query_count_is_constant(django_assert_num_queries) -> None:
+    org = _make_org("delegation-queries")
+    manager = _make_membership(org, "delegation_query_manager")
+    substitute = _make_membership(org, "delegation_query_substitute")
+    role = Role.objects.create(code="query-validator", label="Validator", can_validate=True)
+    assign_role(membership_id=str(manager.id), role_code=role.code, trusted_system=True)
+
+    starts_at = timezone.now() - timezone.timedelta(minutes=1)
+    for day in range(1, 6):
+        delegate_role(
+            role_code=role.code,
+            from_membership_id=str(manager.id),
+            to_membership_id=str(substitute.id),
+            starts_at=starts_at,
+            ends_at=timezone.now() + timezone.timedelta(days=day),
+        )
+
+    with django_assert_num_queries(4):
+        assert has_action_permission(
+            membership_id=str(substitute.id),
+            action="validate",
+            organization_id=str(org.id),
+        ) is True
 
 
 @pytest.mark.django_db
@@ -377,6 +403,84 @@ def test_payment_idempotency_replay_requires_identical_payload() -> None:
             method="transfer",
             idempotency_key="provider-event-1",
             provider_reference="bank-1",
+        )
+
+
+@pytest.mark.django_db
+def test_party_specific_payment_cannot_be_allocated_to_another_party() -> None:
+    org = _make_org("party-allocation")
+    party_a = create_party(
+        organization_id=str(org.id),
+        kind="organization",
+        display_name="Party A",
+    )
+    party_b = create_party(
+        organization_id=str(org.id),
+        kind="organization",
+        display_name="Party B",
+    )
+    _, invoice_b = _make_issued_invoice(org, party_b)
+    payment = register_payment(
+        organization_id=str(org.id),
+        party_id=str(party_a.id),
+        amount=Decimal("120.00"),
+        method="transfer",
+        idempotency_key="party-a-payment",
+    )
+
+    with pytest.raises(ValueError, match="another party's invoice"):
+        allocate_payment(
+            payment_id=str(payment.id),
+            invoice_id=str(invoice_b.id),
+            amount=Decimal("120.00"),
+        )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "mismatched_field",
+    ["party_id", "amount", "currency", "method", "provider_reference"],
+)
+def test_payment_idempotency_rejects_every_payload_field_mismatch(
+    mismatched_field: str,
+) -> None:
+    org = _make_org(f"payment-mismatch-{mismatched_field}")
+    party_a = create_party(
+        organization_id=str(org.id),
+        kind="organization",
+        display_name="Payment Party A",
+    )
+    party_b = create_party(
+        organization_id=str(org.id),
+        kind="organization",
+        display_name="Payment Party B",
+    )
+    original_payload = {
+        "party_id": str(party_a.id),
+        "amount": Decimal("100.00"),
+        "currency": "EUR",
+        "method": "transfer",
+        "provider_reference": "bank-1",
+    }
+    mismatched_values = {
+        "party_id": str(party_b.id),
+        "amount": Decimal("101.00"),
+        "currency": "USD",
+        "method": "card",
+        "provider_reference": "bank-2",
+    }
+    register_payment(
+        organization_id=str(org.id),
+        idempotency_key="provider-event-all-fields",
+        **original_payload,
+    )
+
+    replay_payload = {**original_payload, mismatched_field: mismatched_values[mismatched_field]}
+    with pytest.raises(ValueError, match=rf"different payment payload .*{mismatched_field}"):
+        register_payment(
+            organization_id=str(org.id),
+            idempotency_key="provider-event-all-fields",
+            **replay_payload,
         )
 
 
