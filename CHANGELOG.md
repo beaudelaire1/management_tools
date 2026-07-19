@@ -27,6 +27,8 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ### Added
 
+- Authenticated, responsive server-rendered portal with organization switching, permission-checked navigation,
+  searchable resource lists, detail screens, accessible forms, and a complete quote-to-cash interaction flow.
 - Lot 0 foundation baseline: organizations (F01 partial), accounts and invitations (F02 partial),
   roles and permissions (F03 partial), append-only audit log (F04 baseline),
   workflows with idempotent transitions (F05 baseline), versioned documents (F06 baseline),
