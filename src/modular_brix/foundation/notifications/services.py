@@ -3,6 +3,8 @@ from typing import Protocol
 
 from django.db import transaction
 
+from modular_brix.foundation.accounts.models import Membership
+
 from .models import DeliveryAttempt, MessageTemplate, Notification
 
 MAX_DELIVERY_ATTEMPTS = 3
@@ -52,7 +54,13 @@ def queue_notification(
     body: str,
     idempotency_key: str,
 ) -> Notification:
-    notification, _ = Notification.objects.get_or_create(
+    if recipient_user_id is not None and not Membership.objects.filter(
+        user_id=recipient_user_id,
+        organization_id=organization_id,
+        is_active=True,
+    ).exists():
+        raise ValueError("A notification recipient must actively belong to the organization.")
+    notification, created = Notification.objects.get_or_create(
         organization_id=organization_id,
         idempotency_key=idempotency_key,
         defaults={
@@ -62,6 +70,21 @@ def queue_notification(
             "body": body,
         },
     )
+    if not created:
+        replay_payload = {
+            "recipient_user_id": recipient_user_id,
+            "channel": channel,
+            "subject": subject,
+            "body": body,
+        }
+        stored_payload = {
+            "recipient_user_id": notification.recipient_user_id,
+            "channel": notification.channel,
+            "subject": notification.subject,
+            "body": notification.body,
+        }
+        if replay_payload != stored_payload:
+            raise ValueError("An idempotency key cannot be reused with a different notification payload.")
     return notification
 
 

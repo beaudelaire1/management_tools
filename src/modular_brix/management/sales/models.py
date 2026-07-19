@@ -4,6 +4,18 @@ from django.db import models
 
 
 class Quote(models.Model):
+    FROZEN_FIELDS = (
+        "organization_id",
+        "party_id",
+        "number",
+        "version",
+        "previous_version_id",
+        "currency",
+        "valid_until",
+        "total_excl_tax",
+        "total_tax",
+        "total_incl_tax",
+    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
         "foundation_organizations.Organization",
@@ -39,6 +51,32 @@ class Quote(models.Model):
             models.UniqueConstraint(fields=["organization", "number", "version"], name="uq_quote_org_number_version")
         ]
 
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.status != "draft":
+            raise ValueError("A quote must be created as a draft and sent through the sending service.")
+        if not self._state.adding:
+            original = Quote.objects.get(pk=self.pk)
+            if original.status != "draft" and any(
+                getattr(original, field) != getattr(self, field) for field in self.FROZEN_FIELDS
+            ):
+                raise ValueError("A sent quote version is immutable; create a revision instead.")
+            allowed_transitions = {
+                "draft": {"draft", "sent"},
+                "sent": {"sent", "accepted", "rejected"},
+                "accepted": {"accepted"},
+                "rejected": {"rejected"},
+            }
+            if self.status not in allowed_transitions.get(original.status, set()):
+                raise ValueError(f"Illegal quote status transition: {original.status} -> {self.status}.")
+            if self.status == "accepted" and (not self.acceptance_proof.strip() or self.accepted_at is None):
+                raise ValueError("An accepted quote requires dated acceptance proof.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.status != "draft":
+            raise ValueError("A sent quote version is immutable; create a revision instead.")
+        return super().delete(*args, **kwargs)
+
 
 class QuoteLine(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -53,6 +91,16 @@ class QuoteLine(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["quote", "position"], name="uq_quote_line_position")
         ]
+
+    def save(self, *args, **kwargs):
+        if Quote.objects.filter(id=self.quote_id).exclude(status="draft").exists():
+            raise ValueError("Lines of a sent quote version are immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if Quote.objects.filter(id=self.quote_id).exclude(status="draft").exists():
+            raise ValueError("Lines of a sent quote version are immutable.")
+        return super().delete(*args, **kwargs)
 
 
 class SalesOrder(models.Model):

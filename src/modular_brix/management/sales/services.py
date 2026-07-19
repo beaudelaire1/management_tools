@@ -6,17 +6,23 @@ from django.utils import timezone
 
 from modular_brix.common.money import compute_totals
 from modular_brix.foundation.sequences.services import allocate_number, format_reference
+from modular_brix.management.parties.models import Party
 
 from .models import Delivery, DeliveryLine, Quote, QuoteLine, SalesOrder, SalesOrderLine
 
 
 @transaction.atomic
 def create_quote(*, organization_id: str, party_id: str, currency: str = "EUR") -> Quote:
+    party = Party.objects.get(id=party_id)
+    if str(party.organization_id) != str(organization_id):
+        raise ValueError("A quote and its party must belong to the same organization.")
+    if not party.is_active or party.merged_into_id is not None:
+        raise ValueError("A quote requires an active, non-merged party.")
     year = str(timezone.now().year)
     number = allocate_number(organization_id=organization_id, code="quote", period=year)
     return Quote.objects.create(
         organization_id=organization_id,
-        party_id=party_id,
+        party=party,
         number=format_reference(prefix="Q", period=year, number=number),
         currency=currency,
     )

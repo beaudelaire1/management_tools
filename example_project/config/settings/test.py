@@ -1,3 +1,5 @@
+import os
+
 from .base import *  # noqa: F401,F403
 from .base import BASE_DIR, postgres_database_from_env
 
@@ -12,7 +14,7 @@ DATABASES = {
     "default": postgres_database_from_env()
     or {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.test.sqlite3",
+        "NAME": os.environ.get("SQLITE_TEST_DB", BASE_DIR / "db.test.sqlite3"),
     }
 }
 

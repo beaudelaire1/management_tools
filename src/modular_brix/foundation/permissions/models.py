@@ -11,6 +11,7 @@ class Role(models.Model):
     can_create = models.BooleanField(default=False)
     can_validate = models.BooleanField(default=False)
     can_export = models.BooleanField(default=False)
+    can_manage_permissions = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -46,7 +47,11 @@ class DataScope(models.Model):
             models.UniqueConstraint(
                 fields=["role_assignment", "scope_type", "scope_ref"],
                 name="uq_data_scope_assignment_ref",
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(scope_type__in=["organization", "establishment", "team", "object"]),
+                name="ck_data_scope_type_supported",
+            ),
         ]
 
 
@@ -65,6 +70,8 @@ class Delegation(models.Model):
     )
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
+    scope_type = models.CharField(max_length=24, blank=True)
+    scope_ref = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -72,7 +79,18 @@ class Delegation(models.Model):
             models.CheckConstraint(
                 condition=models.Q(ends_at__gt=models.F("starts_at")),
                 name="ck_delegation_dates_ordered",
-            )
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(scope_type="", scope_ref="") | (~models.Q(scope_type="") & ~models.Q(scope_ref=""))),
+                name="ck_delegation_scope_complete",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(scope_type="")
+                    | models.Q(scope_type__in=["organization", "establishment", "team", "object"])
+                ),
+                name="ck_delegation_scope_type_supported",
+            ),
         ]
 
 
@@ -84,6 +102,15 @@ class PolicyDecisionLog(models.Model):
         related_name="policy_decisions",
     )
     action = models.CharField(max_length=24)
+    target_organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="policy_decisions_targeting_organization",
+    )
+    scope_type = models.CharField(max_length=24, blank=True)
+    scope_ref = models.CharField(max_length=64, blank=True)
     allowed = models.BooleanField()
     reason = models.CharField(max_length=48)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,4 +118,5 @@ class PolicyDecisionLog(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["membership", "action"], name="idx_policy_log_membership"),
+            models.Index(fields=["target_organization", "action"], name="idx_policy_log_target_org"),
         ]

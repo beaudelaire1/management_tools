@@ -40,7 +40,11 @@ def run_report(*, report_id: str, membership_id: str, parameters: dict | None = 
     Each run stores its parameters and timestamp, making the output reproducible.
     """
     report = Report.objects.get(id=report_id)
-    if not has_action_permission(membership_id=membership_id, action="read"):
+    if not has_action_permission(
+        membership_id=membership_id,
+        action="read",
+        organization_id=str(report.organization_id),
+    ):
         raise PermissionError("Report execution denied by policy.")
     params = parameters or {}
     rows = DATASET_REGISTRY[report.dataset_key](str(report.organization_id), params)

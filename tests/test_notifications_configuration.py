@@ -57,11 +57,21 @@ def test_notification_queue_is_idempotent() -> None:
         organization_id=str(org.id),
         recipient_user_id=None,
         channel="email",
-        subject="Hello again",
-        body="Other body",
+        subject="Hello",
+        body="Body",
         idempotency_key="evt-1",
     )
     assert first.id == second.id  # no double notification on replay
+
+    with pytest.raises(ValueError, match="different notification payload"):
+        queue_notification(
+            organization_id=str(org.id),
+            recipient_user_id=None,
+            channel="email",
+            subject="Hello again",
+            body="Other body",
+            idempotency_key="evt-1",
+        )
 
 
 @pytest.mark.django_db

@@ -1,4 +1,4 @@
-# Specification traceability - Lot 0
+# Specification traceability - implemented baselines
 
 ## Covered sections
 
@@ -19,7 +19,8 @@
 - Neutrality: no studio prefix in package names and runtime strings
 - Testable baseline: pytest with database tests for org services and isolation policy
 - Invitation-to-membership baseline: organization membership creation is validated by tests
-- Explicit permission model baseline: deny-by-default and role-granted action is validated by tests
+- Explicit permission model: deny-by-default, active membership, organization isolation, data-scope enforcement,
+  bounded delegation, and logged decisions are validated by tests
 - Audit persistence baseline: auditable events are persisted with context and queryable by organization
 - Workflow baseline: legal transition enforcement, requester/approver separation, and idempotent transition application
 - Documents baseline: append-only version history with current marker and organization-scoped access control
@@ -27,7 +28,7 @@
 - Governance: LICENSE, CONTRIBUTING, CHANGELOG, CODEOWNERS, PR template, initial commit
 - Environments: settings split local/test/production; production deploy check passes with --fail-level WARNING
 - Dependency lock: requirements.lock generated and audited (pip-audit: no known vulnerabilities)
-- Coverage gate: pytest --cov fail-under=85 (measured 99.42%)
+- Coverage gate: pytest --cov fail-under=85 (measured 96.54% after the security consolidation)
 - F01 completed: all specified models, archive without delete
 - F02 extended: session revocation, MFA factor model, progressive lockout, anti-enumeration
 - F03 extended: data scopes, dated delegations, policy decision log, self-elevation blocked
@@ -42,9 +43,14 @@
   explicit revisions, forecast versions reproducible with stored assumptions, scenario comparison without
   side effects, cash flows individually sourced without double counting, margins reconciled to invoice source,
   funnel reconciliation, reports permission-checked and reproducible; steering reads domains, never writes
+- Consolidation: target-organization checks prevent cross-tenant access and relationships; sent quotes, issued
+  invoices, and their lines are immutable at the ORM layer and through PostgreSQL triggers; replayed payment and
+  notification idempotency keys require identical payloads
 
 ## Explicit limits
 
+- Every listed brick remains a baseline until all mandatory interfaces, selectors/policies, APIs where required,
+  examples, and full acceptance criteria from the specification are delivered
 - Operations (G06-G15, P10-P12), pre-accounting and accounting (C04-C15) are not started: next lots
 - C01 full mandatory-mention set and PDF rendering remain to implement; chartered-accountant validation required before production
 - F06 signature workflows and antivirus controls are not yet implemented

@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible defect in a neutral brick.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: brick
+    attributes:
+      label: Brick
+      description: Select the affected domain.
+      options:
+        - Foundation (F01-F12)
+        - Steering (P01-P13)
+        - Management (G01-G15)
+        - Finance or accounting (C01-C15)
+        - Packaging, CI, or documentation
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Include the smallest reproducible example and the exact error.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python, Django, database, operating system, and package version.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This report contains no secret, credential, real personal data, or client-specific information.
+          required: true
