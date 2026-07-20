@@ -73,3 +73,29 @@ def run_export(*, organization_id: str, label: str, row_provider: RowProvider) -
     job.status = "completed"
     job.save(update_fields=["row_count", "status"])
     return job, rows
+
+
+def apply_import_mapping(*, mapping_id: str, row: dict) -> dict:
+    """Rename source columns to target fields; unmapped columns are dropped explicitly (F11)."""
+    from .models import ImportMapping
+
+    mapping = ImportMapping.objects.get(id=mapping_id)
+    return {target: row[source] for source, target in mapping.field_map.items() if source in row}
+
+
+def seal_export(*, payload: str, secret: str) -> str:
+    """Integrity seal (HMAC-SHA256) over an export so tampering is detectable (F11).
+
+    This is an authenticity seal, not confidentiality; encrypt transport and
+    storage at the deployment layer.
+    """
+    import hashlib
+    import hmac
+
+    return hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_export_seal(*, payload: str, secret: str, seal: str) -> bool:
+    import hmac
+
+    return hmac.compare_digest(seal_export(payload=payload, secret=secret), seal)

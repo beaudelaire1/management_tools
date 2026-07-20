@@ -41,3 +41,21 @@ class ExportJob(models.Model):
     status = models.CharField(max_length=24, default="pending")
     row_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ImportMapping(models.Model):
+    """Reusable source-column to target-field mapping for imports (F11)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="import_mappings",
+    )
+    code = models.SlugField(max_length=64)
+    field_map = models.JSONField()  # {"source column": "target_field"}
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "code"], name="uq_import_mapping_code")
+        ]

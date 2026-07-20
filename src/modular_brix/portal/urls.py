@@ -6,6 +6,7 @@ from .views import (
     ResourceDetailView,
     ResourceListView,
     invoice_issue_view,
+    invoice_pdf_view,
     lead_create,
     order_invoice_view,
     party_create,
@@ -34,6 +35,7 @@ urlpatterns = [
     path("<slug:org_slug>/quotes/<uuid:quote_id>/convert/", quote_convert_view, name="quote-convert"),
     path("<slug:org_slug>/orders/<uuid:order_id>/invoice/", order_invoice_view, name="order-invoice"),
     path("<slug:org_slug>/invoices/<uuid:invoice_id>/issue/", invoice_issue_view, name="invoice-issue"),
+    path("<slug:org_slug>/invoices/<uuid:invoice_id>/pdf/", invoice_pdf_view, name="invoice-pdf"),
     path("<slug:org_slug>/payments/new/", payment_create_view, name="payment-create"),
     path("<slug:org_slug>/payments/<uuid:payment_id>/allocate/", payment_allocate_view, name="payment-allocate"),
 ]

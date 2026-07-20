@@ -81,3 +81,40 @@ class VocabularyTerm(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["organization", "key"], name="uq_vocabulary_org_key")
         ]
+
+
+class CustomFieldDefinition(models.Model):
+    """Client-defined field on a model, typed and optionally required (F08)."""
+
+    KINDS = ("text", "number", "date", "choice")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        "foundation_organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="custom_field_definitions",
+    )
+    model_label = models.CharField(max_length=64)  # e.g. management_parties.Party
+    key = models.SlugField(max_length=64)
+    kind = models.CharField(max_length=16)
+    is_required = models.BooleanField(default=False)
+    choices = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "model_label", "key"], name="uq_custom_field_key"
+            )
+        ]
+
+
+class CustomFieldValue(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    definition = models.ForeignKey(CustomFieldDefinition, on_delete=models.CASCADE, related_name="values")
+    object_id = models.CharField(max_length=64)
+    value = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["definition", "object_id"], name="uq_custom_field_value")
+        ]

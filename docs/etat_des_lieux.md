@@ -3,6 +3,16 @@
 Date de vérification : 2026-07-19.
 Commit de référence : `b1a9006` (fusion de la PR #4, portail configurable par brique).
 
+> **Addendum (même jour, après complétion du catalogue).** Depuis ce constat, l'intégralité du
+> catalogue du cahier des charges a été implémentée en baseline : C01 complété (mentions
+> obligatoires + PDF déterministe), lots 4 (G06–G15), 5 (P10–P12), 6 (C04–C07), 7 (C08–C13, C15),
+> 8 (C14, adaptateurs), et les compléments fondations F06–F12. La chaîne qualité complète a été
+> rejouée après chaque lot : au dernier passage, 152 tests passent avec 94,15 % de couverture,
+> ruff/mypy/bandit/pip-audit au vert, migrations complètes appliquées depuis une base vierge.
+> Le détail des critères d'acceptation couverts et des limites restantes (contrats d'interface
+> de la section 9, adaptateur de plateforme agréée, validation expert-comptable) est maintenu
+> dans `spec_traceability.md`. Les sections ci-dessous décrivent l'état AVANT cette complétion.
+
 Ce document est un constat d'ingénierie : chaque affirmation de la section « Vérification » a été obtenue en
 exécutant réellement la chaîne qualité de la CI (`.github/workflows/ci.yml`) sur un environnement propre
 (Python 3.13, PostgreSQL 16.13, installation depuis `requirements.lock`), et non en lisant la documentation.
@@ -58,10 +68,12 @@ spécification ↔ code maintenue dans `spec_traceability.md`.
 - Non commencé : opérations et effectifs (G06–G15, P10–P12) ; chaîne pré-comptable et comptable —
   dépenses, fournisseurs, banque, comptabilité générale et analytique, TVA, immobilisations, clôture,
   facturation électronique, FEC (C04–C15).
-- Limites par brique (documentées dans chaque README) : mentions obligatoires complètes et rendu PDF des
-  factures (C01), signatures électroniques et antivirus (F06), listes de suppression (F07), champs
-  personnalisés (F08), calendriers et jours fériés (F10), mappings et chiffrement des imports (F11),
-  catalogue de partiels HTMX (F12).
+- Limites par brique (documentées dans chaque README) : signatures électroniques et antivirus (F06), listes de
+  suppression (F07), champs personnalisés (F08), calendriers et jours fériés (F10), mappings et chiffrement des
+  imports (F11), catalogue de partiels HTMX (F12). C01 (mentions obligatoires et PDF) a été complété depuis ce
+  constat : snapshot complet figé à l'émission, détection des mentions manquantes, rendu PDF déterministe sans
+  dépendance et téléchargement portail ; restent l'adresse acheteur sans modèle source côté G01 et le taux de
+  pénalité fourni par l'appelant.
 - Prérequis avant production : validation légale et par expert-comptable des exigences françaises
   (facturation, conservation, FEC) ; sauvegarde/restauration uniquement démontrée via
   `dumpdata`/`loaddata` sur le projet de référence.
@@ -77,7 +89,9 @@ spécification ↔ code maintenue dans `spec_traceability.md`.
 
 ## 6. Prochaines étapes recommandées
 
-1. Taguer une version 0.1.0 et basculer le changelog en versionné.
-2. Lot suivant au choix : opérations (G06+) ou chaîne pré-comptable (C04+), selon la priorité produit.
-3. Compléter les limites listées en section 4 brique par brique, en commençant par C01 (mentions
-   obligatoires et PDF), condition de tout usage réel de la facturation.
+1. ~~Basculer le changelog en versionné~~ — fait : section 0.1.0 datée du 2026-07-19 ; créer le tag `v0.1.0`
+   sur `main` une fois la branche fusionnée.
+2. ~~Compléter C01 (mentions obligatoires et PDF)~~ — fait : voir `tests/test_invoice_compliance.py` et le
+   README de la brique billing pour les deux limites restantes (adresse acheteur, taux de pénalité).
+3. Lot suivant au choix : opérations (G06+) ou chaîne pré-comptable (C04+), selon la priorité produit.
+4. Compléter les limites restantes listées en section 4 brique par brique.
