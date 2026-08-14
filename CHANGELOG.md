@@ -5,28 +5,16 @@ The format follows Keep a Changelog and the project adheres to Semantic Versioni
 
 ## [Unreleased]
 
-### Added
+Nothing yet.
 
-- Operations lot 4 (G06-G15): purchasing, append-only stock, projects, interventions, scheduling,
-  time tracking, contracts and subscriptions, support, assets and maintenance, workforce administration.
-- Steering lot 5 (P10-P12): capacity utilization, risk register with controls, quality CAPA.
-- Pre-accounting lot 6 (C04-C07): expenses, supplier invoices with three-way matching, banking with
-  idempotent imports and audited reconciliation, accountant transmission batches.
-- Accounting lot 7 (C08-C13, C15): double-entry ledger, subledger lettering, analytic allocations,
-  tax returns, fixed assets, closing runs, deterministic FEC exports.
-- E-invoicing lot 8 (C14): frozen payloads, idempotent transmissions, pluggable platform adapters.
-- Foundation completions: document signatures and file-acceptance controls (F06), notification
-  suppression lists and channel preferences (F07), typed custom fields (F08), business calendars and
-  holiday-aware deadlines (F10), import mappings and HMAC export seals (F11), HTMX partials (F12).
-- G01 party addresses feeding the C01 buyer-address mention automatically.
+## [0.1.0] - 2026-07-20
 
-## [0.1.0] - 2026-07-19
-
-First tagged release: foundation (F01-F12), commercial cycle (G01-G05), finance baseline (C01-C03) with the
-completed C01 mandatory-mention set and PDF rendering, steering (P01-P09, P13), and the configurable
-server-rendered portal. The full CI quality chain (lint, typing, security scan, dependency audit, migration
-checks, PostgreSQL tests with coverage gate, production deploy check) passes on a clean environment; see
-`docs/etat_des_lieux.md` for the verified status report.
+First tagged release: the complete specification catalogue as tested baselines — foundation F01-F12,
+management G01-G15, finance C01-C15, steering P01-P13 — with the configurable server-rendered portal and
+compliant invoice PDF rendering. The full CI quality chain (lint, typing, security scan, dependency audit,
+migration checks, PostgreSQL tests with coverage gate, production deploy check) passes on a clean
+environment; see `docs/etat_des_lieux.md` for the verified status report and `docs/spec_traceability.md`
+for per-brick acceptance criteria and remaining limits.
 
 ### Security
 
@@ -50,6 +38,18 @@ checks, PostgreSQL tests with coverage gate, production deploy check) passes on 
 
 ### Added
 
+- Operations lot 4 (G06-G15): purchasing, append-only stock, projects, interventions, scheduling,
+  time tracking, contracts and subscriptions, support, assets and maintenance, workforce
+  administration; G01 party addresses feeding the C01 buyer-address mention automatically.
+- Steering lot 5 (P10-P12): capacity utilization, risk register with controls, quality CAPA.
+- Pre-accounting lot 6 (C04-C07): expenses, supplier invoices with three-way matching, banking with
+  idempotent imports and audited reconciliation, accountant transmission batches.
+- Accounting lot 7 (C08-C13, C15): double-entry ledger, subledger lettering, analytic allocations,
+  tax returns, fixed assets, closing runs, deterministic FEC exports.
+- E-invoicing lot 8 (C14): frozen payloads, idempotent transmissions, pluggable platform adapters.
+- Foundation completions: document signatures and file-acceptance controls (F06), notification
+  suppression lists and channel preferences (F07), typed custom fields (F08), business calendars and
+  holiday-aware deadlines (F10), import mappings and HMAC export seals (F11), HTMX partials (F12).
 - C01 completion: full mandatory-mention snapshot frozen at invoice issuance (seller legal identity, share
   capital, registry city, addresses, VAT numbers, late-penalty rate, fixed recovery indemnity, early-discount
   terms, art. 293 B exemption for franchise regimes), `missing_mandatory_mentions` gap reporting, deterministic
